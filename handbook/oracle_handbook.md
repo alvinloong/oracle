@@ -1,5 +1,273 @@
 # [Administration](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/administration.html)
 
+## [Database Administrator's Guide](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/index.html)
+
+### [Part III Schema Objects](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/schema-objects.html#GUID-2DA8C61C-58B0-4892-8E5D-E7A9120BC120)
+
+#### [Managing Tables](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-tables.html#GUID-707B02F5-E589-4C20-8E2E-5ED4F7888702)
+
+##### [Altering Tables](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-tables.html#GUID-D4AE1CF2-08F7-4AB2-9317-0DE20AC70D44)
+
+###### [Adding Table Columns](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-tables.html#GUID-3BBC0224-E218-422F-803A-B2FE56906E44)
+
+```
+ALTER TABLE admin_emp ADD (bonus NUMBER (7,2));
+```
+
+If you specify the `DEFAULT` clause for a nullable column for some table types, then the default value is stored as metadata, but the column itself is not populated with data.
+
+```
+ALTER TABLE employee ADD empoyee_status VARCHAR2(20) DEFAULT ‘Working’ NOT NULL;
+```
+
+#### [Managing Indexes](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-indexes.html#GUID-E4149397-FF37-4367-A12F-675433715904)
+
+##### [Guidelines for Managing Indexes](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-indexes.html#GUID-1C31FFD6-B826-4F13-9452-7C3B8B28F677)
+
+###### [Understand When to Use Unusable or Invisible Indexes](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-indexes.html#GUID-3A66938F-73C6-4173-844E-3938A0DBBB54)
+
+##### [Creating Indexes](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-indexes.html#GUID-BF813E96-C4BD-433C-B26A-70289D938D02)
+
+###### [Creating an Invisible Index](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-indexes.html#GUID-1FEFC754-C26F-4EC7-A1B3-318850A089AA)
+
+```
+CREATE INDEX emp_ename ON emp(ename)
+      TABLESPACE users
+      STORAGE (INITIAL 20K
+      NEXT 20k)
+      INVISIBLE;
+ALTER SESSION SET OPTIMIZER_USE_INVISIBLE_INDEXES=TRUE;
+```
+
+##### [Altering Indexes](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-indexes.html#GUID-E637BC13-A2CA-454D-B680-07B95F7C4CE4)
+
+###### [Making an Index Invisible or Visible](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-indexes.html#GUID-FD6F0D3D-022E-433D-9E11-B3A5D65A84C2)
+
+```
+ALTER INDEX index INVISIBLE;
+ALTER INDEX index VISIBLE;
+SELECT INDEX_NAME, VISIBILITY FROM USER_INDEXES
+   WHERE INDEX_NAME = 'IND1';
+```
+
+## [SQL Language Reference](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqlrf/index.html)
+
+### [Expressions](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqlrf/Expressions.html#GUID-E7A5363C-AEE9-4809-99C1-1A9C6E3AE017)
+
+#### [Column Expressions](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqlrf/Column-Expressions.html#GUID-B16B2D82-5D4B-485B-AE20-160EC0C7137A)
+
+A column expression can be a simple expression, compound expression, function expression, or expression list, but it can contain only the following forms of expression:
+
+- Columns of the subject table — the table being created, altered, or indexed
+
+- Constants (strings or numbers)
+
+- Deterministic functions — either SQL built-in functions or user-defined functions
+
+  See Also:
+
+  [Simple Expressions](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqlrf/Simple-Expressions.html#GUID-0E033897-60FB-40D7-A5F3-498B0FCC31B0), [Compound Expressions](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqlrf/Compound-Expressions.html#GUID-533C7BA0-C8B4-4323-81EA-1379657AF64A), [Function Expressions](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqlrf/Function-Expressions.html#GUID-C47F0B7D-9058-481F-815E-A31FB21F3BD5), and [Expression Lists](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqlrf/Expression-Lists.html#GUID-5CC8FC75-813B-44AA-8737-D940FA887D1E) for information on these forms of *`expr`*
+
+### [SQL Statements: ALTER SYNONYM to COMMENT](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqlrf/SQL-Statements-ALTER-SYNONYM-to-COMMENT.html#GUID-7B9A6386-C065-4D0D-957E-9859DD917A6C)
+
+**alter_interval_partitioning**
+
+```
+CREATE TABLE pos_data_range (
+   start_date        DATE,
+   store_id          NUMBER,
+   inventory_id      NUMBER(6),
+   qty_sold          NUMBER(3)
+)
+   PARTITION BY RANGE (start_date)
+( 
+   PARTITION pos_data_p0 VALUES LESS THAN (TO_DATE('1-7-2007', 'DD-MM-YYYY')),
+   PARTITION pos_data_p1 VALUES LESS THAN (TO_DATE('1-8-2007', 'DD-MM-YYYY'))
+); 
+ALTER TABLE pos_data_range SET INTERVAL(NUMTOYMINTERVAL(1, 'MONTH'));
+ALTER TABLE pos_data_range SET INTERVAL();
+ALTER TABLE pos_data SET INTERVAL(NUMTOYMINTERVAL(3, 'MONTH'));
+```
+
+### [SQL Statements: CREATE SEQUENCE to DROP CLUSTER](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqlrf/SQL-Statements-CREATE-SEQUENCE-to-DROP-CLUSTER.html#GUID-01CD18EA-DF10-4B99-B64A-69BB959EEE59)
+
+#### [CREATE TABLE](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqlrf/CREATE-TABLE.html#GUID-F9CE0CC3-13AE-4744-A43C-EAC7A71AAAB6)
+
+**Interval Partitioning Example**
+
+```
+CREATE TABLE customers_demo (
+  customer_id number(6),
+  cust_first_name varchar2(20),
+  cust_last_name varchar2(20),
+  credit_limit number(9,2))
+PARTITION BY RANGE (credit_limit)
+INTERVAL (1000)
+(PARTITION p1 VALUES LESS THAN (5001));
+SELECT partition_name, high_value FROM user_tab_partitions WHERE table_name = 'CUSTOMERS_DEMO';
+CREATE TABLE pos_data (
+   start_date        DATE,
+   store_id          NUMBER,
+   inventory_id      NUMBER(6),
+   qty_sold          NUMBER(3)
+)
+PARTITION BY RANGE (start_date)
+INTERVAL(NUMTOYMINTERVAL(1, 'MONTH'))
+(
+   PARTITION pos_data_p2 VALUES LESS THAN (TO_DATE('1-7-2007', 'DD-MM-YYYY')),
+   PARTITION pos_data_p3 VALUES LESS THAN (TO_DATE('1-8-2007', 'DD-MM-YYYY'))
+);
+```
+
+# [Development](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/development.html)
+
+## [Database Development Guide](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/adfns/index.html)
+
+### [Part II SQL for Application Developers](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/adfns/sql-for-application-developers.html#GUID-54D6B268-E1AC-4198-AAF7-5AA5595F17EE)
+
+#### [Using Regular Expressions in Database Applications](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/adfns/regexp.html#GUID-1935FD80-A3CD-413F-BD2E-BBEFE64000B2)
+
+```
+SELECT REGEXP_COUNT('Albert Einstein', 'e', 7, 'c') FROM dual;
+SELECT 'Rohit Shinde' Programmer,REGEXP_COUNT(Programmer, 's', 1, 'i') 'Expression_Output' FROM dual;
+```
+
+### [Part IV Advanced Topics for Application Developers](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/adfns/advanced-part.html#GUID-9E3D5BB0-9896-488A-8AAB-9F24C23B4938)
+
+#### [Using Edition-Based Redefinition](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/adfns/editions.html#GUID-58DE05A0-5DEF-4791-8FA8-F04D11964906)
+
+##### [Editions](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/adfns/editions.html#GUID-3C543B31-9BA6-421D-9791-D85866185052)
+
+###### [Editioned and Noneditioned Objects](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/adfns/editions.html#GUID-F0D940E0-618D-4656-982E-1C5E49FCCD42)
+
+**Noneditioned Objects That Can Depend on Editioned O**bjects
+
+**Virtual column**
+
+The expression can invoke PL/SQL functions.
+
+```
+column [ datatype ] [ GENERATED ALWAYS ] AS ( column_expression )
+[ VIRTUAL ] [ evaluation_edition_clause ]
+[ unusable_before_clause ] [ unusable_beginning_clause ]
+[ inline_constraint ]...
+```
+
+```
+CREATE TABLE sales
+(
+   sales_id      NUMBER,
+   cust_id       NUMBER,
+   sales_amt     NUMBER,
+   sale_category VARCHAR2(6)
+   GENERATED ALWAYS AS
+   (
+      CASE
+         WHEN sales_amt <= 10000 THEN 'LOW'
+         WHEN sales_amt > 10000 AND sales_amt <= 100000 THEN 'MEDIUM'
+         WHEN sales_amt > 100000 AND sales_amt <= 1000000 THEN 'HIGH'
+         ELSE 'ULTRA'
+      END
+    ) VIRTUAL
+);
+CREATE TABLE Employee(
+Employee_num NUMBER,
+Salary NUMBER,
+Dearness_allowance NUMBER,
+Total_salary NUMBER AS (Salary+Dearness_allowance)
+);
+```
+
+## [Data Cartridge Developer's Guide](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/addci/index.html)
+
+### [Building Domain Indexes](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/addci/building-domain-indexes.html#GUID-E370B5E4-BAC0-49C6-B17D-830B3A507FB4)
+
+#### [Using System Partitioning](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/addci/building-domain-indexes.html#GUID-032AAB4D-3AEA-4CB3-92F4-C30A3AD59656)
+
+##### [Implementing System Partitioning](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/addci/building-domain-indexes.html#GUID-DEB47AB5-FB01-4A7A-A93B-671D9EDE7D9C)
+
+###### [Creating a System-Partitioned Table](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/addci/building-domain-indexes.html#GUID-2D94CE13-B343-450E-9678-704D35435FB0)
+
+```
+CREATE TABLE SystemPartitionedTable (c1 INTEGER, c2 INTEGER)
+PARTITION BY SYSTEM
+(
+  PARTITION p1 TABLESPACE tbs_1,
+  PARTITION p2 TABLESPACE tbs_2,
+  PARTITION p3 TABLESPACE tbs_3,
+  PARTITION p4 TABLESPACE tbs_4
+);
+CREATE TABLE sales3 
+(
+    sales_id   NUMBER,
+    product_code NUMBER,
+    state_code   NUMBER
+)
+PARTITION BY SYSTEM
+(
+   PARTITION p1 TABLESPACE users,
+   PARTITION p2 TABLESPACE users
+);
+SELECT partition_name FROM user_segments WHERE segment_name = 'SALES3';
+CREATE INDEX in_sales3_state ON sales3 (state_code) LOCAL;
+SELECT partition_name
+FROM user_segments
+WHERE segment_name = 'IN_SALES3_STATE';
+SELECT partitioning_type
+FROM user_part_tables
+WHERE table_name = 'SALES3';
+SELECT partition_name, high_value
+FROM user_tab_partitions
+WHERE table_name = 'SALES3';
+```
+
+###### [Inserting Data into a System-Partitioned Table](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/addci/building-domain-indexes.html#GUID-5A178C16-6B3F-4DC0-8C4D-E2C22A0A5A34)
+
+```
+INSERT INTO SystemPartitionedTable PARTITION (p1) VALUES (4,5);
+INSERT INTO sales3 PARTITION (p1) VALUES (1,101,1);
+```
+
+###### [Deleting and Updating Data in a System-Partitioned Table](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/addci/building-domain-indexes.html#GUID-479314EF-CC8B-4FB2-9DB5-168B9171D3D9)
+
+While delete and update operations do not require the partition extended syntax, Oracle recommends that you use it if at all possible. 
+
+```
+DELETE sales3 WHERE state_code = 1;
+DELETE sales3 PARTITION (p1) WHERE state_code = 1;
+```
+
+# [Performance](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/performance.html)
+
+## [SQL Tuning Guide](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/tgsql/index.html)
+
+### [Part V Optimizer Statistics](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/tgsql/optimizer-statistics.html#GUID-0A2F3D52-A135-43E1-9CAB-55BFE068A297)
+
+#### [Analyzing Statistics Using Optimizer Statistics Advisor](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/tgsql/optimizer-statistics-advisor.html#GUID-054F4B76-DD57-46EE-98EA-0FF04F49D1B3)
+
+### [Monitoring and Tracing SQL](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/tgsql/monitoring-and-tracing-sql.html#GUID-CA494EFF-53D7-4345-9576-8FED65F35AAE)
+
+#### [Performing Application Tracing](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/tgsql/performing-application-tracing.html#GUID-440D3AD4-B302-408E-8627-FE8032DD09F9)
+
+##### [Overview of End-to-End Application Tracing](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/tgsql/performing-application-tracing.html#GUID-246A5A52-E666-4DBC-BDF6-98B83260A7AD)
+
+###### [End-to-End Application Tracing in a Multitenant Environment](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/tgsql/performing-application-tracing.html#GUID-5A0DF363-2BF3-4AD7-A4BC-9CBF45855DE7)
+
+- PDB administrators must view traces from a specific PDB.
+
+  You can use SQL Trace to collect diagnostic data for the SQL statements executing in a PDB application. The trace data includes SQL tracing (event 10046) and optimizer tracing (event 10053). Using `V$` views, developers can access only SQL or optimizer trace records without accessing the entire trace file.
+
+###### [Tools for End-to-End Application Tracing](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/tgsql/performing-application-tracing.html#GUID-31EF2BD5-28DB-488F-A855-8DA324F6970B)
+
+[Overview of TKPROF](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/tgsql/performing-application-tracing.html#GUID-A1F41137-03E2-43AD-98E4-AD49760C4C35)
+
+To format the contents of the trace file and place the output into a readable output file, run the TKPROF program.
+
+TKPROF can also do the following:
+
+- Create a SQL script that stores the statistics in the database
+- Determine the execution plans of SQL statements
+
 # [High Availability](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/high-availability.html)
 
 ## Backup and Recovery
@@ -812,4 +1080,29 @@ lsnrctl status
 #### [Part I Concepts and Administration](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sbydb/oracle-data-guard-concepts.html#GUID-F78703FB-BD74-4F20-9971-8B37ACC40A65)
 
 ##### [Creating a Physical Standby Database](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sbydb/creating-oracle-data-guard-physical-standby.html#GUID-B511FB6E-E3E7-436D-94B5-071C37550170)
+
+# [Data Warehousing](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/data-warehousing.html)
+
+## [VLDB and Partitioning Guide](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/vldbg/index.html)
+
+### [Partitioning Concepts](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/vldbg/partition-concepts.html#GUID-EA7EF5CB-DD49-43AF-889A-F83AAC0D7D51)
+
+#### [Partitioning Extensions](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/vldbg/partition-concepts.html#GUID-90E4C4FC-A021-4AF9-AEAA-02CA4435C9B4)
+
+##### [Manageability Extensions](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/vldbg/partition-concepts.html#GUID-35E4BFBA-B4FE-4A7A-8BFA-AAFDB1C14F60)
+
+###### [Interval Partitioning](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/vldbg/partition-concepts.html#GUID-C121EA1B-2725-4464-B2C9-EEDE0C3C95AB)
+
+Interval partitioning is an extension of range partitioning .
+
+You must specify at least one range partition.
+
+External reading:
+
+[**Oracle Interval Partitioning Tips**](http://www.dba-oracle.com/t_interval_partitioning.htm)
+
+```
+SELECT * FROM pos_data PARTITION (SYS_P81);
+SELECT * FROM pos_data PARTITION FOR (to_date('15-AUG-2007','dd-mon-yyyy'));
+```
 
