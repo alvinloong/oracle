@@ -1,0 +1,2 @@
+CREATE OR REPLACE TYPE typ_number_array IS TABLE OF NUMBER;
+/

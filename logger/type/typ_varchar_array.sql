@@ -1,0 +1,2 @@
+CREATE OR REPLACE TYPE typ_varchar_array IS TABLE OF VARCHAR2(4000);
+/

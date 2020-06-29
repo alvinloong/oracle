@@ -1,0 +1,2 @@
+CREATE PUBLIC SYNONYM t FOR logger.t;
+CREATE PUBLIC SYNONYM t_log FOR logger.t_log;

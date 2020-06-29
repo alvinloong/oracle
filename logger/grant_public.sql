@@ -1,0 +1,2 @@
+GRANT EXECUTE ON logger.t TO PUBLIC;
+GRANT ALL ON logger.t_log TO PUBLIC;

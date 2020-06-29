@@ -1,0 +1,2 @@
+CREATE OR REPLACE TYPE typ_date_array IS TABLE OF DATE;
+/
