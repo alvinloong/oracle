@@ -2,6 +2,59 @@
 
 ## [Database Administrator's Guide](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/index.html)
 
+### [Part I Basic Database Administration](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/basic-database-administration.html#GUID-1DF51F9B-86E9-4E40-A30E-00714E7C0003)
+
+#### [Getting Started with Database Administration](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/getting-started-with-database-administration.html#GUID-EA8CC987-EF18-4434-B962-01312CD3A8AC)
+
+##### [Data Utilities](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/getting-started-with-database-administration.html#GUID-32B0A12C-97F7-4BF8-BEAB-6880346C0BAB)
+
+- See Also:
+  - [*Oracle Database Utilities*](https://docs.oracle.com/pls/topic/lookup?ctx=en/database/oracle/oracle-database/12.2/admin&id=SUTIL003) for detailed information about SQL*Loader
+  - [*Oracle Database Utilities*](https://docs.oracle.com/pls/topic/lookup?ctx=en/database/oracle/oracle-database/12.2/admin&id=SUTIL100) for detailed information about Data Pump
+
+#### [Creating and Configuring an Oracle Database](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/creating-and-configuring-an-oracle-database.html#GUID-807DE711-C82C-4BB2-8C31-5EE89CA71349)
+
+##### [Creating a Database with DBCA](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/creating-and-configuring-an-oracle-database.html#GUID-99A93810-62B1-4707-9995-89B3D0B5FB56)
+
+##### [Specifying Initialization Parameters](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/creating-and-configuring-an-oracle-database.html#GUID-052F49CA-731A-4608-A2B9-2C801621D80F)
+
+###### [Specifying the DDL Lock Timeout](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/creating-and-configuring-an-oracle-database.html#GUID-93D95DD8-B7A0-4C37-B2B2-69A9E5C8F3AD)
+
+```
+ALTER SESSION SET DDL_LOCK_TIMEOUT = 10;
+ALTER SYSTEM SET DDL_LOCK_TIMEOUT = 10;
+ALTER TABLE sales ADD (tax_code VARCHAR2(10));
+```
+
+#### [Starting Up and Shutting Down](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-045DE684-6680-4099-A49E-2F5B5FA59670)
+
+##### [Shutting Down a Database](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-3661B282-5C34-4E32-BC6A-906A72712866)
+
+###### [Shutting Down with the Normal Mode](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-276E548C-DEBC-45EC-903D-4D13F1AEC683)
+
+```
+SHUTDOWN;
+SHUTDOWN NORMAL;
+```
+
+###### [Shutting Down with the Immediate Mode](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-3C64BD77-4C53-41C6-B691-6CC5F59F2CEA)
+
+```
+SHUTDOWN IMMEDIATE;
+```
+
+###### [Shutting Down with the Transactional Mode](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-37C35468-6C3C-471B-A5E2-16592EBA863A)
+
+```
+SHUTDOWN TRANSACTIONAL;
+```
+
+###### [Shutting Down with the Abort Mode](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-CA71AC52-13E6-4958-A963-5F007F106DEC)
+
+```
+SHUTDOWN ABORT;
+```
+
 ### [Part III Schema Objects](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/schema-objects.html#GUID-2DA8C61C-58B0-4892-8E5D-E7A9120BC120)
 
 #### [Managing Tables](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-tables.html#GUID-707B02F5-E589-4C20-8E2E-5ED4F7888702)
@@ -49,6 +102,10 @@ ALTER INDEX index VISIBLE;
 SELECT INDEX_NAME, VISIBILITY FROM USER_INDEXES
    WHERE INDEX_NAME = 'IND1';
 ```
+
+## [Database Backup and Recovery User's Guide](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/index.html)
+
+
 
 ## [SQL Language Reference](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqlrf/index.html)
 
@@ -237,6 +294,357 @@ DELETE sales3 WHERE state_code = 1;
 DELETE sales3 PARTITION (p1) WHERE state_code = 1;
 ```
 
+## [Database PL/SQL Language Reference](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/lnpls/index.html)
+
+### [PL/SQL Static SQL](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/lnpls/static-sql.html#GUID-A2E4086F-94DC-4CC7-9E4B-30285BEC3313)
+
+#### [Cursor Variables](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/lnpls/static-sql.html#GUID-4A6E054A-4002-418D-A1CA-DE849CD7E6D5)
+
+##### [Creating Cursor Variables](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/lnpls/static-sql.html#GUID-470A7A99-888A-46C2-BDAF-D4710E650F27)
+
+**Cursor Variable Declarations**
+
+```
+DECLARE
+  TYPE empcurtyp IS REF CURSOR RETURN employees%ROWTYPE;  -- strong type
+  TYPE genericcurtyp IS REF CURSOR;                       -- weak type
+
+  cursor1  empcurtyp;       -- strong cursor variable
+  cursor2  genericcurtyp;   -- weak cursor variable
+  my_cursor SYS_REFCURSOR;  -- weak cursor variable
+
+  TYPE deptcurtyp IS REF CURSOR RETURN departments%ROWTYPE;  -- strong type
+  dept_cv deptcurtyp;  -- strong cursor variable
+BEGIN
+  NULL;
+END;
+/
+```
+
+**Cursor Variable with User-Defined Return Type**
+
+```
+DECLARE
+  TYPE EmpRecTyp IS RECORD (
+    employee_id NUMBER,
+    last_name VARCHAR2(25),
+    salary   NUMBER(8,2));
+
+  TYPE EmpCurTyp IS REF CURSOR RETURN EmpRecTyp;
+  emp_cv EmpCurTyp;
+BEGIN
+  NULL;
+END;
+/
+```
+
+##### [Variables in Cursor Variable Queries](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/lnpls/static-sql.html#GUID-E03A2A12-D298-4D1C-8CCE-3B5D17DDFC7C)
+
+**Variable in Cursor Variable Query—No Result Set Change**
+
+```
+DECLARE
+  sal           employees.salary%TYPE;
+  sal_multiple  employees.salary%TYPE;
+  factor        INTEGER := 2;
+ 
+  cv SYS_REFCURSOR;
+ 
+BEGIN
+  OPEN cv FOR
+    SELECT salary, salary*factor
+    FROM employees
+    WHERE job_id LIKE 'AD_%';   -- PL/SQL evaluates factor
+ 
+  LOOP
+    FETCH cv INTO sal, sal_multiple;
+    EXIT WHEN cv%NOTFOUND;
+    DBMS_OUTPUT.PUT_LINE('factor = ' || factor);
+    DBMS_OUTPUT.PUT_LINE('sal          = ' || sal);
+    DBMS_OUTPUT.PUT_LINE('sal_multiple = ' || sal_multiple);
+    factor := factor + 1;  -- Does not affect sal_multiple
+  END LOOP;
+ 
+  CLOSE cv;
+END;
+/
+```
+
+**Variable in Cursor Variable Query—Result Set Change**
+
+```
+DECLARE
+  sal           employees.salary%TYPE;
+  sal_multiple  employees.salary%TYPE;
+  factor        INTEGER := 2;
+ 
+  cv SYS_REFCURSOR;
+ 
+BEGIN
+  DBMS_OUTPUT.PUT_LINE('factor = ' || factor);
+ 
+  OPEN cv FOR
+    SELECT salary, salary*factor
+    FROM employees
+    WHERE job_id LIKE 'AD_%';   -- PL/SQL evaluates factor
+ 
+  LOOP
+    FETCH cv INTO sal, sal_multiple;
+    EXIT WHEN cv%NOTFOUND;
+    DBMS_OUTPUT.PUT_LINE('sal          = ' || sal);
+    DBMS_OUTPUT.PUT_LINE('sal_multiple = ' || sal_multiple);
+  END LOOP;
+ 
+  factor := factor + 1;
+ 
+  DBMS_OUTPUT.PUT_LINE('factor = ' || factor);
+ 
+  OPEN cv FOR
+    SELECT salary, salary*factor
+    FROM employees
+    WHERE job_id LIKE 'AD_%';   -- PL/SQL evaluates factor
+ 
+  LOOP
+    FETCH cv INTO sal, sal_multiple;
+    EXIT WHEN cv%NOTFOUND;
+    DBMS_OUTPUT.PUT_LINE('sal          = ' || sal);
+    DBMS_OUTPUT.PUT_LINE('sal_multiple = ' || sal_multiple);
+  END LOOP;
+ 
+  CLOSE cv;
+END;
+/
+```
+
+##### [Querying a Collection](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/lnpls/static-sql.html#GUID-65ADB424-2C2D-49ED-9E98-99A3A68BA248)
+
+```
+CREATE OR REPLACE PACKAGE pkg AUTHID DEFINER AS
+  TYPE rec IS RECORD(f1 NUMBER, f2 VARCHAR2(30));
+  TYPE mytab IS TABLE OF rec INDEX BY pls_integer;
+END;
+
+DECLARE
+  v1 pkg.mytab;  -- collection of records
+  v2 pkg.rec;
+  c1 SYS_REFCURSOR;
+BEGIN
+  v1(1).f1 := 1;
+  v1(1).f2 := 'one';
+  OPEN c1 FOR SELECT * FROM TABLE(v1);
+  FETCH c1 INTO v2;
+  CLOSE c1;
+  DBMS_OUTPUT.PUT_LINE('Values in record are ' || v2.f1 || ' and ' || v2.f2);
+END;
+/
+```
+
+##### [Cursor Variables as Subprogram Parameters](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/lnpls/static-sql.html#GUID-9713DFC2-3C2E-49B2-922F-02D43F9D0619)
+
+**Procedure to Open Cursor Variable for One Query**
+
+```
+CREATE OR REPLACE PACKAGE emp_data AUTHID DEFINER AS
+  TYPE empcurtyp IS REF CURSOR RETURN employees%ROWTYPE;
+  PROCEDURE open_emp_cv (emp_cv IN OUT empcurtyp);
+END emp_data;
+/
+CREATE OR REPLACE PACKAGE BODY emp_data AS
+  PROCEDURE open_emp_cv (emp_cv IN OUT EmpCurTyp) IS
+  BEGIN
+    OPEN emp_cv FOR SELECT * FROM employees;
+  END open_emp_cv;
+END emp_data;
+/
+```
+
+**Opening Cursor Variable for Chosen Query (Same Return Type)**
+
+```
+CREATE OR REPLACE PACKAGE emp_data AUTHID DEFINER AS
+  TYPE empcurtyp IS REF CURSOR RETURN employees%ROWTYPE;
+  PROCEDURE open_emp_cv (emp_cv IN OUT empcurtyp, choice INT);
+END emp_data;
+/
+CREATE OR REPLACE PACKAGE BODY emp_data AS
+  PROCEDURE open_emp_cv (emp_cv IN OUT empcurtyp, choice INT) IS
+  BEGIN
+    IF choice = 1 THEN
+      OPEN emp_cv FOR SELECT *
+      FROM employees
+      WHERE commission_pct IS NOT NULL;
+    ELSIF choice = 2 THEN
+      OPEN emp_cv FOR SELECT *
+      FROM employees
+      WHERE salary > 2500;
+    ELSIF choice = 3 THEN
+      OPEN emp_cv FOR SELECT *
+      FROM employees
+      WHERE department_id = 100;
+    END IF;
+  END;
+END emp_data;
+/
+```
+
+**Opening Cursor Variable for Chosen Query (Different Return Types)**
+
+```
+CREATE OR REPLACE PACKAGE admin_data AUTHID DEFINER AS
+  TYPE gencurtyp IS REF CURSOR;
+  PROCEDURE open_cv (generic_cv IN OUT gencurtyp, choice INT);
+END admin_data;
+/
+CREATE OR REPLACE PACKAGE BODY admin_data AS
+  PROCEDURE open_cv (generic_cv IN OUT gencurtyp, choice INT) IS
+  BEGIN
+    IF choice = 1 THEN
+      OPEN generic_cv FOR SELECT * FROM employees;
+    ELSIF choice = 2 THEN
+      OPEN generic_cv FOR SELECT * FROM departments;
+    ELSIF choice = 3 THEN
+      OPEN generic_cv FOR SELECT * FROM jobs;
+    END IF;
+  END;
+END admin_data;
+/
+```
+
+### [PL/SQL Error Handling](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/lnpls/plsql-error-handling.html#GUID-0502DC1A-F0A5-4180-A912-6A5CDC855F56)
+
+#### [Retrieving Error Code and Error Message](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/lnpls/plsql-error-handling.html#GUID-7E0CDD98-D31C-4745-B819-B5C5E1DF90A8)
+
+In an exception handler, for the exception being handled:
+
+- You can retrieve the error code with the PL/SQL function `SQLCODE`, described in "[SQLCODE Function](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/lnpls/SQLCODE-function.html#GUID-1FFD7902-D22D-4505-815A-C97DDBEFB4B5)".
+
+- You can retrieve the error message with either:
+
+  - The PL/SQL function `SQLERRM`, described in "[SQLERRM Function](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/lnpls/SQLERRM-function.html#GUID-D4468C8F-62D9-42A5-AF72-C1098C866DC5)"
+
+    This function returns a maximum of 512 bytes, which is the maximum length of an Oracle Database error message (including the error code, nested messages, and message inserts such as table and column names).
+
+  - The package function `DBMS_UTILITY`.`FORMAT_ERROR_STACK`, described in [*Oracle Database PL/SQL Packages and Types Reference*](https://www.oracle.com/pls/topic/lookup?ctx=en/database/oracle/oracle-database/12.2/lnpls&id=ARPLS73242)
+
+    This function returns the full error stack, up to 2000 bytes.
+
+  Oracle recommends using `DBMS_UTILITY`.`FORMAT_ERROR_STACK`, except when using the `FORALL` statement with its `SAVE` `EXCEPTIONS` clause, as in [Example 12-13](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/lnpls/plsql-optimization-and-tuning.html#GUID-DAF46F06-EF3F-4B1A-A518-5238B80C69FA__BABGBABA).
+
+A SQL statement cannot invoke `SQLCODE` or `SQLERRM`. To use their values in a SQL statement, assign them to local variables first, as in [Example 11-23](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/lnpls/plsql-error-handling.html#GUID-7E0CDD98-D31C-4745-B819-B5C5E1DF90A8__CJAJBAJG).
+
+See Also:
+
+- [*Oracle Database PL/SQL Packages and Types Reference*](https://www.oracle.com/pls/topic/lookup?ctx=en/database/oracle/oracle-database/12.2/lnpls&id=ARPLS73241) for information about the `DBMS_UTILITY`.`FORMAT_ERROR_BACKTRACE` function, which displays the call stack at the point where an exception was raised, even if the subprogram is called from an exception handler in an outer scope
+- [*Oracle Database PL/SQL Packages and Types Reference*](https://www.oracle.com/pls/topic/lookup?ctx=en/database/oracle/oracle-database/12.2/lnpls&id=ARPLS74078) for information about the `UTL_CALL_STACK` package, whose subprograms provide information about currently executing subprograms, including subprogram names
+
+```
+DROP TABLE errors;
+CREATE TABLE errors (
+  code      NUMBER,
+  message   VARCHAR2(64)
+);
+
+CREATE OR REPLACE PROCEDURE p AUTHID DEFINER AS
+  name    EMPLOYEES.LAST_NAME%TYPE;
+  v_code  NUMBER;
+  v_errm  VARCHAR2(64);
+BEGIN
+  SELECT last_name INTO name
+  FROM EMPLOYEES
+  WHERE EMPLOYEE_ID = -1;
+EXCEPTION
+  WHEN OTHERS THEN
+    v_code := SQLCODE;
+    v_errm := SUBSTR(SQLERRM, 1, 64);
+    DBMS_OUTPUT.PUT_LINE
+      ('Error code ' || v_code || ': ' || v_errm);
+ 
+    /* Invoke another procedure,
+       declared with PRAGMA AUTONOMOUS_TRANSACTION,
+       to insert information about errors. */
+ 
+    INSERT INTO errors (code, message)
+    VALUES (v_code, v_errm);
+
+    RAISE;
+END;
+/
+```
+
+#### [Continuing Execution After Handling Exceptions](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/lnpls/plsql-error-handling.html#GUID-E63131E7-4AE6-4C47-8D21-5EC1F6D3AA68)
+
+**Exception Handler Runs and Execution Ends**
+
+```
+DROP TABLE employees_temp;
+CREATE TABLE employees_temp AS
+  SELECT employee_id, salary, commission_pct
+  FROM employees;
+ 
+DECLARE
+  sal_calc NUMBER(8,2);
+BEGIN
+  INSERT INTO employees_temp (employee_id, salary, commission_pct)
+  VALUES (301, 2500, 0);
+ 
+  SELECT (salary / commission_pct) INTO sal_calc
+  FROM employees_temp
+  WHERE employee_id = 301;
+ 
+  INSERT INTO employees_temp VALUES (302, sal_calc/100, .1);
+  DBMS_OUTPUT.PUT_LINE('Row inserted.');
+EXCEPTION
+  WHEN ZERO_DIVIDE THEN
+    DBMS_OUTPUT.PUT_LINE('Division by zero.');
+END;
+/
+```
+
+Result:
+
+```
+Division by zero.
+```
+
+**Exception Handler Runs and Execution Continues**
+
+```
+DECLARE
+  sal_calc NUMBER(8,2);
+BEGIN
+  INSERT INTO employees_temp (employee_id, salary, commission_pct)
+  VALUES (301, 2500, 0);
+ 
+  BEGIN
+    SELECT (salary / commission_pct) INTO sal_calc
+    FROM employees_temp
+    WHERE employee_id = 301;
+  EXCEPTION
+    WHEN ZERO_DIVIDE THEN
+      DBMS_OUTPUT.PUT_LINE('Substituting 2500 for undefined number.');
+      sal_calc := 2500;
+  END;
+ 
+  INSERT INTO employees_temp VALUES (302, sal_calc/100, .1);
+  DBMS_OUTPUT.PUT_LINE('Enclosing block: Row inserted.');
+EXCEPTION
+  WHEN ZERO_DIVIDE THEN
+    DBMS_OUTPUT.PUT_LINE('Enclosing block: Division by zero.');
+END;
+/
+```
+
+Result:
+
+```
+Substituting 2500 for undefined number.
+Enclosing block: Row inserted.
+```
+
+## [Database PL/SQL Packages and Types Reference](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/arpls/index.html)
+
+
+
 # [Performance](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/performance.html)
 
 ## [SQL Tuning Guide](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/tgsql/index.html)
@@ -245,7 +653,7 @@ DELETE sales3 PARTITION (p1) WHERE state_code = 1;
 
 #### [Analyzing Statistics Using Optimizer Statistics Advisor](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/tgsql/optimizer-statistics-advisor.html#GUID-054F4B76-DD57-46EE-98EA-0FF04F49D1B3)
 
-### [Monitoring and Tracing SQL](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/tgsql/monitoring-and-tracing-sql.html#GUID-CA494EFF-53D7-4345-9576-8FED65F35AAE)
+### [Part VII Monitoring and Tracing SQL](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/tgsql/monitoring-and-tracing-sql.html#GUID-CA494EFF-53D7-4345-9576-8FED65F35AAE)
 
 #### [Performing Application Tracing](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/tgsql/performing-application-tracing.html#GUID-440D3AD4-B302-408E-8627-FE8032DD09F9)
 
@@ -459,13 +867,9 @@ RECOVER CORRUPTION LIST;
 RECOVER DATAFILE 1 BLOCK 233, 235 DATAFILE 2 BLOCK 100 TO 200;
 ```
 
-
-
 #### [Part III Backing Up and Archiving Data](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/part-backing-up-archiving.html#GUID-008E0F84-E623-4467-8706-A99B34002DD6)
 
 ##### [RMAN Backup Concepts](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/rman-backup-concepts.html#GUID-B3380142-ABCD-437F-9E06-B219D74E6738)
-
-
 
 #### [Part IV Managing RMAN Backups](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/part-managing-rman-backups.html#GUID-9B9779FA-2C8B-4D11-AC3B-F6FFA95AE2D1)
 
@@ -481,6 +885,34 @@ DELETE COPY;
 ```
 
 ###### [Deleting Specified Backups and Copies](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/maintaining-rman-backups.html#GUID-D39FCF70-C71B-46C7-8ED5-94CF33A5611D)
+
+#### [Part V Diagnosing and Responding to Failures](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/part-diagnosing-responding-failures.html#GUID-ED89DC53-A816-450B-BFF4-A712D2694EEC)
+
+##### [Performing Flashback and Database Point-in-Time Recovery](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/rman-performing-flashback-dbpitr.html#GUID-5463669A-DC89-4FF4-ACCE-136A72DF687B)
+
+###### [Rewinding a Table with Flashback Table](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/rman-performing-flashback-dbpitr.html#GUID-FF315DFC-ABBC-410D-ABDB-75FA89D43255)
+
+```
+SELECT CURRENT_SCN FROM V$DATABASE;
+SELECT NAME, SCN, TIME FROM V$RESTORE_POINT;
+SELECT NAME, VALUE/60 MINUTES_RETAINED
+FROM   V$PARAMETER
+WHERE  NAME = 'undo_retention';
+ALTER TABLE table ENABLE ROW MOVEMENT;
+SELECT other.owner, other.table_name
+FROM   sys.all_constraints this, sys.all_constraints other
+WHERE  this.owner = schema_name
+AND    this.table_name = table_name
+AND    this.r_owner = other.owner
+AND    this.r_constraint_name = other.constraint_name
+AND    this.constraint_type='R';
+FLASHBACK TABLE hr.temp_employees
+  TO RESTORE POINT temp_employees_update;
+FLASHBACK TABLE hr.temp_employees
+  TO SCN 123456;
+FLASHBACK TABLE hr.temp_employees
+  TO TIMESTAMP TO_TIMESTAMP('2013-10-17 09:30:00', 'YYYY-MM-DD HH:MI:SS');
+```
 
 ## Data Guard
 
@@ -830,7 +1262,6 @@ EDIT DATABASE 'cdb1' SET PROPERTY 'LogXptMode'='SYNC';
 EDIT DATABASE 'cdb1_stby' SET PROPERTY 'LogXptMode'='SYNC';
 EDIT DATABASE 'cdb1' SET PROPERTY FastStartFailoverTarget='cdb1_stby';
 EDIT CONFIGURATION SET PROTECTION MODE AS MAXAVAILABILITY;
-
 ```
 
 If it is not already enabled on the primary and standby databases, enable Flashback Database by issuing the following statements on each database:
