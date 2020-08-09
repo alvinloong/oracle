@@ -28,6 +28,211 @@ ALTER TABLE sales ADD (tax_code VARCHAR2(10));
 
 #### [Starting Up and Shutting Down](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-045DE684-6680-4099-A49E-2F5B5FA59670)
 
+##### [Starting Up a Database](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-203404B5-5157-4F29-A241-B8ABC4753819)
+
+###### [Starting Up an Instance](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-D9267CB2-D5E5-4A22-93AA-CF69D618FE6B)
+
+[About Starting Up an Instance](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-85232C86-0135-4F4C-8941-09963AD78BBB)
+
+With SQL*Plus and Oracle Restart, you can start an instance in various modes:
+
+- `NOMOUNT`—Start the instance without mounting a database. This does not allow access to the database and usually would be done only for database creation or the re-creation of control files.
+- `MOUNT`—Start the instance and mount the database, but leave it closed. This state allows for certain DBA activities, but does not allow general access to the database.
+- `OPEN`—Start the instance, and mount and open the database. This can be done in unrestricted mode, allowing access to all users, or in restricted mode, allowing access for database administrators only.
+- `FORCE`—Force the instance to start after a startup or shutdown problem.
+- `OPEN` `RECOVER`—Start the instance and have complete media recovery begin immediately.
+
+See Also:
+
+- [*SQL\*Plus User's Guide and Reference*](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqpug/STARTUP.html#GUID-275013B7-CAE2-4619-9A0F-40DB71B61FE8) for details on the `STARTUP` command syntax
+
+STARTUP **Syntax**
+
+```
+STARTUP db_options  | cdb_options | upgrade_options
+```
+
+where *db options* has the following syntax:
+
+```
+[FORCE] [RESTRICT] [PFILE=filename] [QUIET]  [ MOUNT [dbname] |  [ OPEN [open_db_options] [dbname] ] | NOMOUNT ]
+```
+
+To bring the database to the next stage, you use the `ALTER DATABASE` statement. For example, this statement brings the database from the `NOMOUNT` to the `MOUNT` stage:
+
+```
+ALTER DATABASE MOUNT;
+ALTER DATABASE OPEN;
+```
+
+[Starting an Instance, and Mounting and Opening a Database](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-88014B87-63F0-43CD-A01F-8EC595AC1636)
+
+```
+STARTUP
+STARTUP OPEN
+```
+
+[Starting an Instance Without Mounting a Database](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-F3543C05-09A3-48AA-A06D-72F6E7E1B571)
+
+```
+STARTUP NOMOUNT
+```
+
+database creation
+
+```
+STARTUP NOMOUNT
+CREATE DATABASE sample
+   CONTROLFILE REUSE 
+   LOGFILE
+      GROUP 1 ('diskx:log1.log', 'disky:log1.log') SIZE 50K, 
+      GROUP 2 ('diskx:log2.log', 'disky:log2.log') SIZE 50K 
+   MAXLOGFILES 5 
+   MAXLOGHISTORY 100 
+   MAXDATAFILES 10 
+   MAXINSTANCES 2 
+   ARCHIVELOG 
+   CHARACTER SET AL32UTF8
+   NATIONAL CHARACTER SET AL16UTF16
+   DATAFILE  
+      'disk1:df1.dbf' AUTOEXTEND ON,
+      'disk2:df2.dbf' AUTOEXTEND ON NEXT 10M MAXSIZE UNLIMITED
+   DEFAULT TEMPORARY TABLESPACE temp_ts
+   UNDO TABLESPACE undo_ts 
+   SET TIME_ZONE = '+02:00';
+```
+
+re-creation of control files
+
+```
+STARTUP NOMOUNT
+CREATE CONTROLFILE REUSE DATABASE "CDB1" RESETLOGS FORCE LOGGING ARCHIVELOG
+    MAXLOGFILES 16
+    MAXLOGMEMBERS 3
+    MAXDATAFILES 1024
+    MAXINSTANCES 8
+    MAXLOGHISTORY 292
+LOGFILE
+  GROUP 1 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_1_hkc7zl6g_.log'  SIZE 50M BLOCKSIZE 512,
+  GROUP 2 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_2_hkc7zlpn_.log'  SIZE 50M BLOCKSIZE 512,
+  GROUP 3 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_3_hkc7zm63_.log'  SIZE 50M BLOCKSIZE 512
+BLOCKSIZE 512
+DATAFILE
+  '/u01/oradata/CDB1_STBY/datafile/o1_mf_system_hkc7w1yp_.dbf',
+  '/u01/oradata/CDB1_STBY/datafile/o1_mf_sysaux_hkc7x5hs_.dbf',
+  '/u01/oradata/CDB1_STBY/datafile/o1_mf_undotbs1_hkc7xo5g_.dbf',
+  '/u01/oradata/CDB1_STBY/datafile/o1_mf_users_hkc7yfr6_.dbf',
+CHARACTER SET AL32UTF8
+;
+```
+
+Create standby database
+
+```
+echo "******************************************************************************"
+echo "Create auxillary instance." `date`
+echo "******************************************************************************"
+sqlplus / as sysdba <<EOF
+--SHUTDOWN IMMEDIATE;
+STARTUP NOMOUNT PFILE='/tmp/init${ORACLE_SID}_stby.ora';
+exit;
+EOF
+
+echo "******************************************************************************"
+echo "Create standby database using RMAN duplicate." `date`
+echo "******************************************************************************"
+rman TARGET sys/${SYS_PASSWORD}@${NODE1_DB_UNIQUE_NAME} AUXILIARY sys/${SYS_PASSWORD}@${NODE2_DB_UNIQUE_NAME} <<EOF
+
+DUPLICATE TARGET DATABASE
+  FOR STANDBY
+  FROM ACTIVE DATABASE
+  DORECOVER
+  SPFILE
+    SET db_unique_name='${NODE2_DB_UNIQUE_NAME}' COMMENT 'Is standby'
+  NOFILENAMECHECK;
+  
+exit;
+EOF
+```
+
+[Starting an Instance and Mounting a Database](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-01B47551-8B2E-4A4C-9A8A-4999C09161FC)
+
+```
+STARTUP MOUNT
+```
+
+For example, the database must be mounted but not open during the following tasks:
+
+- Starting with Oracle Database 12*c* Release 1 (12.1.0.2), putting a database instance in force full database caching mode. For more information, see "[Using Force Full Database Caching Mode](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-memory.html#GUID-CEBDCC3D-4B69-43C1-A7BE-F635F9F69D5F)".
+- Enabling and disabling redo log archiving options. For more information, see [Managing Archived Redo Log Files](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-archived-redo-log-files.html#GUID-5EE4AC49-E1B2-41A2-BEE7-AA951EAAB2F3).
+- Performing full database recovery. For more information, see [*Oracle Database Backup and Recovery User's Guide*](https://docs.oracle.com/pls/topic/lookup?ctx=en/database/oracle/oracle-database/12.2/admin&id=BRADV8005).
+
+Enable archivelog mode
+
+```
+SHUTDOWN IMMEDIATE;
+STARTUP MOUNT;
+ALTER DATABASE ARCHIVELOG;
+ALTER DATABASE OPEN;
+```
+
+[Restricting Access to an Instance at Startup](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-7A570C5F-BCBB-49A4-9586-270ED9DE2079)
+
+```
+STARTUP RESTRICT
+ALTER SYSTEM ENABLE RESTRICTED SESSION;
+ALTER SYSTEM DISABLE RESTRICTED SESSION;
+```
+
+[Forcing an Instance to Start](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-751E8E2A-C114-456E-AC6E-B66B1A91AF1B)
+
+You should not force a database to start unless you are faced with the following:
+
+- You cannot shut down the current instance with the `SHUTDOWN NORMAL`, `SHUTDOWN IMMEDIATE`, or `SHUTDOWN TRANSACTIONAL` commands.
+- You experience problems when starting an instance.
+
+```
+STARTUP FORCE
+```
+
+[Starting an Instance, Mounting a Database, and Starting Complete Media Recovery](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-CCA52747-05CA-4ED3-BE6D-E2E684C4D87D)
+
+```
+STARTUP OPEN RECOVER
+```
+
+[Automatic Database Startup at Operating System Start](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-61535B5E-457C-4676-9A6E-070C647CEAFA)
+
+[Starting Remote Instances](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-CE1C1E98-FF9C-44EA-B749-4129EEF3EC6F)
+
+##### [Altering Database Availability](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-2042AAE4-DAE5-4CD4-89E9-B9DE3A8A2AA1)
+
+###### [Mounting a Database to an Instance](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-BFB79EA2-2BB0-4BB4-9900-E16FA78011CF)
+
+```
+ALTER DATABASE MOUNT;
+```
+
+###### [Opening a Closed Database](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-2F9AB5DD-2744-4509-BD02-2C7893C78E4E)
+
+```
+ALTER DATABASE OPEN;
+```
+
+###### [Opening a Database in Read-Only Mode](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-E346A6EB-6CAA-4A0F-AF0E-841B8C3D5B05)
+
+```
+ALTER DATABASE OPEN READ ONLY;
+ALTER DATABASE OPEN READ WRITE;
+```
+
+###### [Restricting Access to an Open Database](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-989D380B-A4BE-43D2-B687-C68EDA7F69A5)
+
+```
+ALTER SYSTEM ENABLE RESTRICTED SESSION;
+ALTER SYSTEM DISABLE RESTRICTED SESSIO;
+```
+
 ##### [Shutting Down a Database](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-3661B282-5C34-4E32-BC6A-906A72712866)
 
 ###### [Shutting Down with the Normal Mode](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/starting-up-and-shutting-down.html#GUID-276E548C-DEBC-45EC-903D-4D13F1AEC683)
@@ -53,6 +258,441 @@ SHUTDOWN TRANSACTIONAL;
 
 ```
 SHUTDOWN ABORT;
+```
+
+### [Part II Oracle Database Structure and Storage](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/oracle-database-structure-and-storage.html#GUID-F11D30A7-BF12-4D8F-A1C2-D7437D38F8C7)
+
+#### [Managing Control Files](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-control-files.html#GUID-5F6F9382-6921-4992-9789-E63B18E99C5F)
+
+##### [Creating Control Files](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-control-files.html#GUID-9CBB8320-E2F6-4BDB-9B1C-A7B801F97F73)
+
+```
+CONTROL_FILES = (/u01/oracle/prod/control01.ctl,
+                 /u02/oracle/prod/control02.ctl, 
+                 /u03/oracle/prod/control03.ctl)
+```
+
+###### [Creating New Control Files](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-control-files.html#GUID-9B2E206A-C7E0-4409-9EE2-7501F2BDB696)
+
+[When to Create New Control Files](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-control-files.html#GUID-553F209C-EE30-4637-8344-BB26FE3AA088)
+
+You must create new control files in certain situations.
+
+It is necessary for you to create new control files in the following situations:
+
+- All control files for the database have been permanently damaged and you do not have a control file backup.
+- You want to change the database name.
+
+[The CREATE CONTROLFILE Statement](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-control-files.html#GUID-E4677C95-CDBE-4FB5-9A9E-A227B3547FAE)
+
+```
+CREATE CONTROLFILE
+   SET DATABASE prod
+   LOGFILE GROUP 1 ('/u01/oracle/prod/redo01_01.log', 
+                    '/u01/oracle/prod/redo01_02.log'),
+           GROUP 2 ('/u01/oracle/prod/redo02_01.log', 
+                    '/u01/oracle/prod/redo02_02.log'),
+           GROUP 3 ('/u01/oracle/prod/redo03_01.log', 
+                    '/u01/oracle/prod/redo03_02.log') 
+   RESETLOGS
+   DATAFILE '/u01/oracle/prod/system01.dbf' SIZE 3M,
+            '/u01/oracle/prod/rbs01.dbs' SIZE 5M,
+            '/u01/oracle/prod/users01.dbs' SIZE 5M,
+            '/u01/oracle/prod/temp01.dbs' SIZE 5M
+   MAXLOGFILES 50
+   MAXLOGMEMBERS 3
+   MAXLOGHISTORY 400
+   MAXDATAFILES 200
+   MAXINSTANCES 6
+   ARCHIVELOG;
+```
+
+[Creating New Control Files](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-control-files.html#GUID-3F2B3E3B-F53C-41C9-A902-3CABFCF4EB40)
+
+```
+SELECT member FROM v$logfile;
+SELECT name FROM v$datafile;
+SELECT value FROM v$parameter WHERE name = 'control_files';
+SHOW PARAMETER control_files;
+```
+
+##### [Backing Up Control Files](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-control-files.html#GUID-204AF8CF-6C51-4D0F-ADE2-BA804352EA93)
+
+Back up the control file to a binary file (duplicate of existing control file) using the following statement:
+
+```
+ALTER DATABASE BACKUP CONTROLFILE TO '/oracle/backup/control.bkp';
+```
+
+Produce SQL statements that can later be used to re-create your control file:
+
+```
+ALTER DATABASE BACKUP CONTROLFILE TO TRACE;
+SELECT * FROM v$diag_info WHERE name = 'Diag Trace';
+```
+
+```
+less /u01/app/oracle/diag/rdbms/cdb1_stby/cdb1/trace/alert_cdb1.log
+Backup controlfile written to trace file /u01/app/oracle/diag/rdbms/cdb1_stby/cdb1/trace/cdb1_ora_2338.trc
+less /u01/app/oracle/diag/rdbms/cdb1_stby/cdb1/trace/cdb1_ora_2338.trc
+```
+
+```
+-- The following are current System-scope REDO Log Archival related
+-- parameters and can be included in the database initialization file.
+--
+-- LOG_ARCHIVE_DEST=''
+-- LOG_ARCHIVE_DUPLEX_DEST=''
+--
+-- LOG_ARCHIVE_FORMAT=%t_%s_%r.dbf
+--
+-- DB_UNIQUE_NAME="cdb1_stby"
+--
+-- LOG_ARCHIVE_CONFIG='SEND, RECEIVE'
+-- LOG_ARCHIVE_CONFIG='DG_CONFIG=("cdb1")'
+-- LOG_ARCHIVE_MAX_PROCESSES=4
+-- STANDBY_FILE_MANAGEMENT=AUTO
+-- STANDBY_ARCHIVE_DEST=?#/dbs/arch
+-- FAL_CLIENT=''
+-- FAL_SERVER=cdb1.world
+--
+-- LOG_ARCHIVE_DEST_1='LOCATION=USE_DB_RECOVERY_FILE_DEST'
+-- LOG_ARCHIVE_DEST_1='OPTIONAL REOPEN=300 NODELAY'
+-- LOG_ARCHIVE_DEST_1='ARCH NOAFFIRM NOVERIFY SYNC'
+-- LOG_ARCHIVE_DEST_1='REGISTER NOALTERNATE NODEPENDENCY'
+-- LOG_ARCHIVE_DEST_1='NOMAX_FAILURE NOQUOTA_SIZE NOQUOTA_USED NODB_UNIQUE_NAME'
+-- LOG_ARCHIVE_DEST_1='VALID_FOR=(PRIMARY_ROLE,ONLINE_LOGFILES)'
+-- LOG_ARCHIVE_DEST_STATE_1=ENABLE
+--
+-- Below are two sets of SQL statements, each of which creates a new
+-- control file and uses it to open the database. The first set opens
+-- the database with the NORESETLOGS option and should be used only if
+-- the current versions of all online logs are available. The second
+-- set opens the database with the RESETLOGS option and should be used
+-- if online logs are unavailable.
+-- The appropriate set of statements can be copied from the trace into
+-- a script file, edited as necessary, and executed when there is a
+-- need to re-create the control file.
+--
+```
+
+```
+--     Set #1. NORESETLOGS case
+--
+-- The following commands will create a new control file and use it
+-- to open the database.
+-- Data used by Recovery Manager will be lost.
+-- Additional logs may be required for media recovery of offline
+-- Use this only if the current versions of all online logs are
+-- available.
+-- WARNING! The current control file needs to be checked against
+-- the datafiles to insure it contains the correct files. The
+-- commands printed here may be missing log and/or data files.
+-- Another report should be made after the database has been
+-- successfully opened.
+-- After mounting the created controlfile, the following SQL
+-- statement will place the database in the appropriate
+-- protection mode:
+--  ALTER DATABASE SET STANDBY DATABASE TO MAXIMIZE PERFORMANCE
+STARTUP NOMOUNT
+CREATE CONTROLFILE REUSE DATABASE "CDB1" NORESETLOGS FORCE LOGGING ARCHIVELOG
+    MAXLOGFILES 16
+    MAXLOGMEMBERS 3
+    MAXDATAFILES 1024
+    MAXINSTANCES 8
+    MAXLOGHISTORY 292
+LOGFILE
+  GROUP 1 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_1_hkc7zl6g_.log'  SIZE 50M BLOCKSIZE 512,
+  GROUP 2 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_2_hkc7zlpn_.log'  SIZE 50M BLOCKSIZE 512,
+  GROUP 3 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_3_hkc7zm63_.log'  SIZE 50M BLOCKSIZE 512
+-- STANDBY LOGFILE
+--   GROUP 10 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_10_hkc7zmnx_.log'  SIZE 50M BLOCKSIZE 512,
+--   GROUP 11 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_11_hkc7zn42_.log'  SIZE 50M BLOCKSIZE 512,
+--   GROUP 12 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_12_hkc7znl3_.log'  SIZE 50M BLOCKSIZE 512,
+--   GROUP 13 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_13_hkc7znyy_.log'  SIZE 50M BLOCKSIZE 512
+DATAFILE
+  '/u01/oradata/CDB1_STBY/datafile/o1_mf_system_hkc7w1yp_.dbf',
+  '/u01/oradata/CDB1_STBY/datafile/o1_mf_sysaux_hkc7x5hs_.dbf',
+  '/u01/oradata/CDB1_STBY/datafile/o1_mf_undotbs1_hkc7xo5g_.dbf',
+  '/u01/oradata/CDB1_STBY/datafile/o1_mf_users_hkc7yfr6_.dbf',
+  '/u01/oradata/CDB1_STBY/AADE880BD721351EE05365C7A8C0D10E/datafile/o1_mf_system_hkc7ylvy_.dbf',
+  '/u01/oradata/CDB1_STBY/AADE880BD721351EE05365C7A8C0D10E/datafile/o1_mf_sysaux_hkc7yt7v_.dbf',
+  '/u01/oradata/CDB1_STBY/AADE880BD721351EE05365C7A8C0D10E/datafile/o1_mf_undotbs1_hkc7z9sd_.dbf',
+  '/u01/oradata/CDB1_STBY/AADE880BD721351EE05365C7A8C0D10E/datafile/o1_mf_users_hkc7zc69_.dbf'
+CHARACTER SET AL32UTF8
+;
+-- Commands to re-create incarnation table
+-- Below log names MUST be changed to existing filenames on
+-- disk. Any one log file from each branch can be used to
+-- re-create incarnation records.
+-- ALTER DATABASE REGISTER LOGFILE '/u01/app/oracle/CDB1_STBY/archivelog/2020_08_08/o1_mf_1_1_%u_.arc';
+-- ALTER DATABASE REGISTER LOGFILE '/u01/app/oracle/CDB1_STBY/archivelog/2020_08_08/o1_mf_1_1_%u_.arc';
+-- Recovery is required if any of the datafiles are restored backups,
+-- or if the last shutdown was not normal or immediate.
+RECOVER DATABASE
+-- All logs need archiving and a log switch is needed.
+ALTER SYSTEM ARCHIVE LOG ALL;
+-- Database can now be opened normally.
+ALTER DATABASE OPEN;
+-- Open all the PDBs.
+ALTER PLUGGABLE DATABASE ALL OPEN;
+-- Files in read-only tablespaces are now named.
+ALTER DATABASE RENAME FILE 'MISSING00005'
+  TO '/u01/oradata/CDB1_STBY/AADE6CBD2E162DF5E05365C7A8C024EB/datafile/o1_mf_system_hkc7xpqo_.dbf';
+ALTER DATABASE RENAME FILE 'MISSING00006'
+  TO '/u01/oradata/CDB1_STBY/AADE6CBD2E162DF5E05365C7A8C024EB/datafile/o1_mf_sysaux_hkc7xy99_.dbf';
+ALTER DATABASE RENAME FILE 'MISSING00008'
+  TO '/u01/oradata/CDB1_STBY/AADE6CBD2E162DF5E05365C7A8C024EB/datafile/o1_mf_undotbs1_hkc7yh89_.dbf';
+-- Online the files in read-only tablespaces.
+ALTER SESSION SET CONTAINER = PDB$SEED;
+ALTER TABLESPACE "SYSTEM" ONLINE;
+ALTER TABLESPACE "SYSAUX" ONLINE;
+ALTER TABLESPACE "UNDOTBS1" ONLINE;
+ALTER SESSION SET CONTAINER = CDB$ROOT;
+-- Commands to add tempfiles to temporary tablespaces.
+-- Online tempfiles have complete space information.
+-- Other tempfiles may require adjustment.
+ALTER TABLESPACE TEMP ADD TEMPFILE '/u01/oradata/CDB1_STBY/datafile/o1_mf_temp_hkc8ry4r_.tmp' REUSE;
+ALTER SESSION SET CONTAINER = PDB$SEED;
+ALTER TABLESPACE TEMP ADD TEMPFILE '/u01/oradata/CDB1_STBY/AADE6CBD2E162DF5E05365C7A8C024EB/datafile/o1_mf_temp_hkc8rzsm_.tmp' REUSE;
+ALTER SESSION SET CONTAINER = PDB1;
+ALTER TABLESPACE TEMP ADD TEMPFILE '/u01/oradata/CDB1_STBY/AADE880BD721351EE05365C7A8C0D10E/datafile/o1_mf_temp_%u_.tmp' REUSE;
+ALTER SESSION SET CONTAINER = CDB$ROOT;
+-- End of tempfile additions.
+--
+--
+----------------------------------------------------------
+-- The following script can be used on the standby database
+-- to re-populate entries for a standby controlfile created
+-- on the primary and copied to the standby site.
+----------------------------------------------------------
+ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_10_hkc7zmnx_.log'
+ SIZE 50M BLOCKSIZE 512 REUSE;
+ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_11_hkc7zn42_.log'
+ SIZE 50M BLOCKSIZE 512 REUSE;
+ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_12_hkc7znl3_.log'
+ SIZE 50M BLOCKSIZE 512 REUSE;
+ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_13_hkc7znyy_.log'
+ SIZE 50M BLOCKSIZE 512 REUSE;
+-- Registering these archivelog entries will help rebuild
+-- information displayed by the V$ARCHIVED_LOG fixed view
+```
+
+```
+--     Set #2. RESETLOGS case
+--
+-- The following commands will create a new control file and use it
+-- to open the database.
+-- Data used by Recovery Manager will be lost.
+-- The contents of online logs will be lost and all backups will
+-- be invalidated. Use this only if online logs are damaged.
+-- WARNING! The current control file needs to be checked against
+-- the datafiles to insure it contains the correct files. The
+-- commands printed here may be missing log and/or data files.
+-- Another report should be made after the database has been
+-- successfully opened.
+-- After mounting the created controlfile, the following SQL
+-- statement will place the database in the appropriate
+-- protection mode:
+--  ALTER DATABASE SET STANDBY DATABASE TO MAXIMIZE PERFORMANCE
+STARTUP NOMOUNT
+CREATE CONTROLFILE REUSE DATABASE "CDB1" RESETLOGS FORCE LOGGING ARCHIVELOG
+    MAXLOGFILES 16
+    MAXLOGMEMBERS 3
+    MAXDATAFILES 1024
+    MAXINSTANCES 8
+    MAXLOGHISTORY 292
+LOGFILE
+  GROUP 1 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_1_hkc7zl6g_.log'  SIZE 50M BLOCKSIZE 512,
+  GROUP 2 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_2_hkc7zlpn_.log'  SIZE 50M BLOCKSIZE 512,
+  GROUP 3 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_3_hkc7zm63_.log'  SIZE 50M BLOCKSIZE 512
+-- STANDBY LOGFILE
+--   GROUP 10 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_10_hkc7zmnx_.log'  SIZE 50M BLOCKSIZE 512,
+--   GROUP 11 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_11_hkc7zn42_.log'  SIZE 50M BLOCKSIZE 512,
+--   GROUP 12 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_12_hkc7znl3_.log'  SIZE 50M BLOCKSIZE 512,
+--   GROUP 13 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_13_hkc7znyy_.log'  SIZE 50M BLOCKSIZE 512
+DATAFILE
+  '/u01/oradata/CDB1_STBY/datafile/o1_mf_system_hkc7w1yp_.dbf',
+  '/u01/oradata/CDB1_STBY/datafile/o1_mf_sysaux_hkc7x5hs_.dbf',
+  '/u01/oradata/CDB1_STBY/datafile/o1_mf_undotbs1_hkc7xo5g_.dbf',
+  '/u01/oradata/CDB1_STBY/datafile/o1_mf_users_hkc7yfr6_.dbf',
+  '/u01/oradata/CDB1_STBY/AADE880BD721351EE05365C7A8C0D10E/datafile/o1_mf_system_hkc7ylvy_.dbf',
+  '/u01/oradata/CDB1_STBY/AADE880BD721351EE05365C7A8C0D10E/datafile/o1_mf_sysaux_hkc7yt7v_.dbf',
+  '/u01/oradata/CDB1_STBY/AADE880BD721351EE05365C7A8C0D10E/datafile/o1_mf_undotbs1_hkc7z9sd_.dbf',
+  '/u01/oradata/CDB1_STBY/AADE880BD721351EE05365C7A8C0D10E/datafile/o1_mf_users_hkc7zc69_.dbf'
+CHARACTER SET AL32UTF8
+;
+-- Commands to re-create incarnation table
+-- Below log names MUST be changed to existing filenames on
+-- disk. Any one log file from each branch can be used to
+-- re-create incarnation records.
+-- ALTER DATABASE REGISTER LOGFILE '/u01/app/oracle/CDB1_STBY/archivelog/2020_08_08/o1_mf_1_1_%u_.arc';
+-- ALTER DATABASE REGISTER LOGFILE '/u01/app/oracle/CDB1_STBY/archivelog/2020_08_08/o1_mf_1_1_%u_.arc';
+-- Recovery is required if any of the datafiles are restored backups,
+-- or if the last shutdown was not normal or immediate.
+RECOVER DATABASE USING BACKUP CONTROLFILE
+-- Database can now be opened zeroing the online logs.
+ALTER DATABASE OPEN RESETLOGS;
+-- Open all the PDBs.
+ALTER PLUGGABLE DATABASE ALL OPEN;
+-- Files in read-only tablespaces are now named.
+ALTER DATABASE RENAME FILE 'MISSING00005'
+  TO '/u01/oradata/CDB1_STBY/AADE6CBD2E162DF5E05365C7A8C024EB/datafile/o1_mf_system_hkc7xpqo_.dbf';
+ALTER DATABASE RENAME FILE 'MISSING00006'
+  TO '/u01/oradata/CDB1_STBY/AADE6CBD2E162DF5E05365C7A8C024EB/datafile/o1_mf_sysaux_hkc7xy99_.dbf';
+ALTER DATABASE RENAME FILE 'MISSING00008'
+  TO '/u01/oradata/CDB1_STBY/AADE6CBD2E162DF5E05365C7A8C024EB/datafile/o1_mf_undotbs1_hkc7yh89_.dbf';
+-- Online the files in read-only tablespaces.
+ALTER SESSION SET CONTAINER = PDB$SEED;
+ALTER TABLESPACE "SYSTEM" ONLINE;
+ALTER TABLESPACE "SYSAUX" ONLINE;
+ALTER TABLESPACE "UNDOTBS1" ONLINE;
+ALTER SESSION SET CONTAINER = CDB$ROOT;
+-- Commands to add tempfiles to temporary tablespaces.
+-- Online tempfiles have complete space information.
+-- Other tempfiles may require adjustment.
+ALTER TABLESPACE TEMP ADD TEMPFILE '/u01/oradata/CDB1_STBY/datafile/o1_mf_temp_hkc8ry4r_.tmp' REUSE;
+ALTER SESSION SET CONTAINER = PDB$SEED;
+ALTER TABLESPACE TEMP ADD TEMPFILE '/u01/oradata/CDB1_STBY/AADE6CBD2E162DF5E05365C7A8C024EB/datafile/o1_mf_temp_hkc8rzsm_.tmp' REUSE;
+ALTER SESSION SET CONTAINER = PDB1;
+ALTER TABLESPACE TEMP ADD TEMPFILE '/u01/oradata/CDB1_STBY/AADE880BD721351EE05365C7A8C0D10E/datafile/o1_mf_temp_%u_.tmp' REUSE;
+ALTER SESSION SET CONTAINER = CDB$ROOT;
+-- End of tempfile additions.
+--
+--
+--
+----------------------------------------------------------
+-- The following script can be used on the standby database
+-- to re-populate entries for a standby controlfile created
+-- on the primary and copied to the standby site.
+----------------------------------------------------------
+ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_10_hkc7zmnx_.log'
+ SIZE 50M BLOCKSIZE 512 REUSE;
+ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_11_hkc7zn42_.log'
+ SIZE 50M BLOCKSIZE 512 REUSE;
+ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_12_hkc7znl3_.log'
+ SIZE 50M BLOCKSIZE 512 REUSE;
+ALTER DATABASE ADD STANDBY LOGFILE THREAD 1 '/u01/oradata/CDB1_STBY/onlinelog/o1_mf_13_hkc7znyy_.log'
+ SIZE 50M BLOCKSIZE 512 REUSE;
+-- Registering these archivelog entries will help rebuild
+-- information displayed by the V$ARCHIVED_LOG fixed view
+```
+
+##### [Recovering a Control File Using a Current Copy](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-control-files.html#GUID-D6662264-5149-4394-BE10-28C3047A8343)
+
+###### [Recovering from Control File Corruption Using a Control File Copy](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-control-files.html#GUID-EF0BDE73-74D7-48E7-89E1-9CA09000C58E)
+
+```
+% cp /u03/oracle/prod/control03.ctl  /u02/oracle/prod/control02.ctl
+```
+
+###### [Recovering from Permanent Media Failure Using a Control File Copy](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-control-files.html#GUID-1D5E1025-2FD5-4A72-B250-1F99CE36AAA8)
+
+```
+% cp /u01/oracle/prod/control01.ctl  /u04/oracle/prod/control03.ctl
+CONTROL_FILES = (/u01/oracle/prod/control01.ctl,
+                 /u02/oracle/prod/control02.ctl, 
+                 /u04/oracle/prod/control03.ctl)
+```
+
+##### [Dropping Control Files](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-control-files.html#GUID-AB003834-2392-4B99-ADBD-497636A2E096)
+
+You can drop control files, but the database should have **at least two control files** at all times.
+
+Note:
+
+This operation does not physically delete the unwanted control file from the disk. Use operating system commands to delete the unnecessary file after you have dropped the control file from the database.
+
+##### [Control Files Data Dictionary Views](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-control-files.html#GUID-B0AB9343-301E-45C8-AACC-5BC9C85CB2CD)
+
+```
+SELECT name FROM v$controlfile;
+SELECT value FROM v$parameter WHERE name = 'control_files';
+SELECT rpad(substr(name,1,50),51,' ') "control file name" FROM gv$controlfile;
+
+SELECT
+    status,
+    name,
+    is_recovery_dest_file,
+    block_size,
+    file_size_blks,
+    con_id
+FROM
+    v$controlfile;
+SELECT
+    controlfile_type,
+    controlfile_created,
+    controlfile_sequence#,
+    controlfile_change#,
+    controlfile_time
+FROM
+    v$database;
+SELECT
+    type,
+    record_size,
+    records_total,
+    records_used,
+    first_index,
+    last_index,
+    last_recid,
+    con_id
+FROM
+    v$controlfile_record_section;
+```
+
+#### [Managing Archived Redo Log Files](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-archived-redo-log-files.html#GUID-5EE4AC49-E1B2-41A2-BEE7-AA951EAAB2F3)
+
+##### [What Is the Archived Redo Log?](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-archived-redo-log-files.html#GUID-9BD00F2E-DC98-4871-8D26-FDB40623909C)
+
+You can use archived redo log files to:
+
+- Recover a database
+- Update a standby database
+- Get information about the history of a database using the LogMiner utility
+
+##### [Choosing Between NOARCHIVELOG and ARCHIVELOG Mode](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-archived-redo-log-files.html#GUID-2FF3967A-44E6-4EA1-8759-5DB2D67CBDE1)
+
+###### [Running a Database in NOARCHIVELOG Mode](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-archived-redo-log-files.html#GUID-21A9A3AC-1D90-4848-B3BB-3A9E797547F8)
+
+###### [Running a Database in ARCHIVELOG Mode](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-archived-redo-log-files.html#GUID-36F3335E-A28B-47BA-82C2-E17B4C8A453A)
+
+The archiving of filled groups has these advantages:
+
+- A database backup, together with online and archived redo log files, guarantees that you can recover all committed transactions in the event of an operating system or disk failure.
+- If you keep archived logs available, you can use a backup taken while the database is open and in normal system use.
+- You can keep a standby database current with its original database by continuously applying the original archived redo log files to the standby.
+
+##### [Controlling Archiving](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-archived-redo-log-files.html#GUID-BE84B19D-7BE2-40D5-B962-5EF54E53095C)
+
+###### [Setting the Initial Database Archiving Mode](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-archived-redo-log-files.html#GUID-0FC1DF01-4AB0-4888-B61F-19D234DAB6CB)
+
+###### [Changing the Database Archiving Mode](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-archived-redo-log-files.html#GUID-C12EA833-4717-430A-8919-5AEA747087B9)
+
+**Back up the database before and after.**
+
+Enable archivelog mode
+
+```
+SHUTDOWN IMMEDIATE;
+STARTUP MOUNT;
+ALTER DATABASE ARCHIVELOG;
+ALTER DATABASE OPEN;
+```
+
+###### [Performing Manual Archiving](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-archived-redo-log-files.html#GUID-6796C2F0-C35B-42E0-85C2-C19A94855E96)
+
+```
+SHUTDOWN IMMEDIATE;
+STARTUP MOUNT;
+ALTER DATABASE ARCHIVELOG MANUAL;
+ALTER DATABASE OPEN;
+ALTER SYSTEM ARCHIVE LOG ALL;
+```
+
+###### [Adjusting the Number of Archiver Processes](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/managing-archived-redo-log-files.html#GUID-8E0F3F8E-0727-46F4-8E8E-FFEC2EE0D375)
+
+```
+ALTER SYSTEM SET LOG_ARCHIVE_MAX_PROCESSES=6;
 ```
 
 ### [Part III Schema Objects](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/admin/schema-objects.html#GUID-2DA8C61C-58B0-4892-8E5D-E7A9120BC120)
@@ -103,9 +743,93 @@ SELECT INDEX_NAME, VISIBILITY FROM USER_INDEXES
    WHERE INDEX_NAME = 'IND1';
 ```
 
+## [Database Concepts](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/index.html)
+
+### [Part III Oracle Transaction Management](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/oracle-transaction-management.html#GUID-3144CE4E-8120-49D9-9BDF-BE9C011E5662)
+
+#### [Data Concurrency and Consistency](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/data-concurrency-and-consistency.html#GUID-E8CBA9C5-58E3-460F-A82A-850E0152E95C)
+
+##### [Introduction to Data Concurrency and Consistency](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/data-concurrency-and-consistency.html#GUID-7AD41DFA-04E5-4738-B744-C4407170411C)
+
+###### [Multiversion Read Consistency](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/data-concurrency-and-consistency.html#GUID-4BD4DFD6-DAEA-41B2-BB56-7135568F0548)
+
+[Read Consistency and Undo Segments](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/data-concurrency-and-consistency.html#GUID-8DC0D1D1-C2B1-4237-9B77-27889B6467C1)
+
+### [Part IV Oracle Database Storage Structures](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/oracle-database-storage-structures.html#GUID-B679FE3E-8FC1-404C-A368-5A4AC0553664)
+
+#### [Logical Storage Structures](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/logical-storage-structures.html#GUID-13CE5EDA-8C66-4CA0-87B5-4069215A368D)
+
+##### [Overview of Segments](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/logical-storage-structures.html#GUID-7DA83E64-9FF1-45A7-A9AC-D4997DDE0866)
+
+###### [Undo Segments](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/logical-storage-structures.html#GUID-6E206D3A-E0E7-4B23-9C41-516FB35BC3FE)
+
+### [Part V Oracle Instance Architecture](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/oracle-instance-architecture.html#GUID-23B1D0B9-F8FC-42EB-AE48-6D00558DB675)
+
+#### [Memory Architecture](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/memory-architecture.html#GUID-913335DF-050A-479A-A653-68A064DCCA41)
+
+##### [Overview of the Program Global Area (PGA)](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/memory-architecture.html#GUID-859795E2-87CD-442B-B36F-584A77755F59)
+
+##### [Overview of the System Global Area (SGA)](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/memory-architecture.html#GUID-24EDB8CD-8279-4CED-82AF-642FC01A4A73)
+
+###### [Database Buffer Cache](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/memory-architecture.html#GUID-4FF66585-E469-4631-9225-29D75594CD14)
+
+###### [Redo Log Buffer](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/memory-architecture.html#GUID-C2AD1BF6-A5AE-42E9-9677-0AA08126864B)
+
+###### [Shared Pool](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/memory-architecture.html#GUID-1CB2BA23-4386-46DA-9146-5FE0E4599AC6)
+
+###### [Large Pool](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/memory-architecture.html#GUID-1ECB5213-AC4E-4BB4-9113-91C761676B34)
+
+###### [Java Pool](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/memory-architecture.html#GUID-51234BB8-1976-4670-8BC5-BB0E3D3BA12D)
+
+###### [Fixed SGA](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/memory-architecture.html#GUID-F18E4E7F-2ED9-4734-A6E4-4E77D0561C19)
+
+#### [Process Architecture](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/process-architecture.html#GUID-85D9852E-5BF1-4AC0-9E5A-49F0570DBD7A)
+
+##### [Introduction to Processes](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/process-architecture.html#GUID-FB843ADE-8DDD-4F83-8EB9-D4B5E4B6B022)
+
+###### [Types of Processes](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/process-architecture.html#GUID-B9B8BB8D-FB3D-46BC-AFBD-346A69BAB3EC)
+
+###### [Multiprocess and Multithreaded Oracle Database Systems](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/process-architecture.html#GUID-4B460E97-18A0-4F5A-A62F-9608FFD43664)
+
+```
+COL SPID FORMAT a8
+COL STID FORMAT a8
+SELECT SPID, STID, PROGRAM FROM V$PROCESS ORDER BY SPID;
+```
+
+##### [Overview of Background Processes](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/process-architecture.html#GUID-D8AE1B78-69D5-4F0F-8BE3-C91AA2514F2D)
+
+###### [Mandatory Background Processes](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/process-architecture.html#GUID-2E691FEA-9027-47E4-A3D0-1B235BBA295A)
+
+[Process Monitor Process (PMON) Group](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/process-architecture.html#GUID-B5CA9579-53DB-442C-A85F-F21FD334833A)
+
+[System Monitor Process (SMON)](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/process-architecture.html#GUID-21393D94-CA2D-4551-BD20-28BEFDC98631)
+
+[Database Writer Process (DBW)](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/process-architecture.html#GUID-DC9CBDED-3978-450A-9D7A-0A94CE8FF233)
+
+[Log Writer Process (LGWR)](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/process-architecture.html#GUID-B6BE2C31-1543-4504-9763-6FFBBF99DC85)
+
+[Checkpoint Process (CKPT)](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/process-architecture.html#GUID-D3174B3E-BCCA-473F-961E-84A36FD5C372)
+
+[Recoverer Process (RECO)](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/process-architecture.html#GUID-9FF900D1-7DB8-4D41-8D34-8E99AF650CEC)
+
+[Figure 15-4](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/process-architecture.html#GUID-D3174B3E-BCCA-473F-961E-84A36FD5C372__BABEACIA)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## [Database Backup and Recovery User's Guide](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/index.html)
-
-
 
 ## [SQL Language Reference](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqlrf/index.html)
 
@@ -146,6 +870,33 @@ ALTER TABLE pos_data_range SET INTERVAL();
 ALTER TABLE pos_data SET INTERVAL(NUMTOYMINTERVAL(3, 'MONTH'));
 ```
 
+### [SQL Statements: COMMIT to CREATE JAVA](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqlrf/SQL-Statements-COMMIT-to-CREATE-JAVA.html#GUID-A087EE75-DE65-4AA6-A479-280413DB74C8)
+
+#### [CREATE DATABASE](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqlrf/CREATE-DATABASE.html#GUID-ECE717DF-F116-4151-927C-2E51BB9DD39C)
+
+**Creating a Database: Example**
+
+```
+CREATE DATABASE sample
+   CONTROLFILE REUSE 
+   LOGFILE
+      GROUP 1 ('diskx:log1.log', 'disky:log1.log') SIZE 50K, 
+      GROUP 2 ('diskx:log2.log', 'disky:log2.log') SIZE 50K 
+   MAXLOGFILES 5 
+   MAXLOGHISTORY 100 
+   MAXDATAFILES 10 
+   MAXINSTANCES 2 
+   ARCHIVELOG 
+   CHARACTER SET AL32UTF8
+   NATIONAL CHARACTER SET AL16UTF16
+   DATAFILE  
+      'disk1:df1.dbf' AUTOEXTEND ON,
+      'disk2:df2.dbf' AUTOEXTEND ON NEXT 10M MAXSIZE UNLIMITED
+   DEFAULT TEMPORARY TABLESPACE temp_ts
+   UNDO TABLESPACE undo_ts 
+   SET TIME_ZONE = '+02:00';
+```
+
 ### [SQL Statements: CREATE SEQUENCE to DROP CLUSTER](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqlrf/SQL-Statements-CREATE-SEQUENCE-to-DROP-CLUSTER.html#GUID-01CD18EA-DF10-4B99-B64A-69BB959EEE59)
 
 #### [CREATE TABLE](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqlrf/CREATE-TABLE.html#GUID-F9CE0CC3-13AE-4744-A43C-EAC7A71AAAB6)
@@ -174,6 +925,54 @@ INTERVAL(NUMTOYMINTERVAL(1, 'MONTH'))
    PARTITION pos_data_p2 VALUES LESS THAN (TO_DATE('1-7-2007', 'DD-MM-YYYY')),
    PARTITION pos_data_p3 VALUES LESS THAN (TO_DATE('1-8-2007', 'DD-MM-YYYY'))
 );
+```
+
+### [SQL Statements: MERGE to UPDATE](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqlrf/SQL-Statements-MERGE-to-UPDATE.html#GUID-07BBB875-6272-441A-893F-35E2F9CA58ED)
+
+#### [MERGE](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqlrf/MERGE.html#GUID-5692CCB7-24D9-4C0E-81A7-A22436DC968F)
+
+```
+MERGE INTO bonuses D
+   USING (SELECT employee_id, salary, department_id FROM employees
+   WHERE department_id = 80) S
+   ON (D.employee_id = S.employee_id)
+   WHEN MATCHED THEN UPDATE SET D.bonus = D.bonus + S.salary*.01
+     DELETE WHERE (S.salary > 8000)
+   WHEN NOT MATCHED THEN INSERT (D.employee_id, D.bonus)
+     VALUES (S.employee_id, S.salary*.01)
+     WHERE (S.salary <= 8000);
+```
+
+## [SQL*Plus User's Guide and Reference](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqpug/index.html)
+
+### [Part III SQL*Plus Reference](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqpug/SQL-Plus-reference.html#GUID-C3D4A718-56AD-4872-ADFF-A216FF70EDF2)
+
+#### [SQL*Plus Command Reference](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqpug/SQL-Plus-command-reference.html#GUID-177F24B7-D154-4F8B-A05B-7568079800C6)
+
+##### [STARTUP](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqpug/STARTUP.html#GUID-275013B7-CAE2-4619-9A0F-40DB71B61FE8)
+
+**Syntax**
+
+```
+STARTUP db_options  | cdb_options | upgrade_options
+```
+
+where *db options* has the following syntax:
+
+```
+[FORCE] [RESTRICT] [PFILE=filename] [QUIET]  [ MOUNT [dbname] |  [ OPEN [open_db_options] [dbname] ] | NOMOUNT ]
+```
+
+where *open_db_options* has the following syntax:
+
+```
+READ {ONLY | WRITE [RECOVER]} | RECOVER
+```
+
+where *cdb_options* has the following syntax:
+
+```
+root_connection_options | pdb_connection_options
 ```
 
 # [Development](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/development.html)
@@ -643,8 +1442,6 @@ Enclosing block: Row inserted.
 
 ## [Database PL/SQL Packages and Types Reference](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/arpls/index.html)
 
-
-
 # [Performance](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/performance.html)
 
 ## [SQL Tuning Guide](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/tgsql/index.html)
@@ -871,6 +1668,34 @@ RECOVER DATAFILE 1 BLOCK 233, 235 DATAFILE 2 BLOCK 100 TO 200;
 
 ##### [RMAN Backup Concepts](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/rman-backup-concepts.html#GUID-B3380142-ABCD-437F-9E06-B219D74E6738)
 
+###### [Backing Up the Database](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/backing-up-database.html#GUID-93BAB347-063F-439E-BDF3-109AB8D1F8E7)
+
+[Backing Up Database Files with RMAN](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/backing-up-database.html#GUID-344F4D14-AC81-4093-B921-6403EE75112C)
+
+[Backing Up Control Files with RMAN](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/backing-up-database.html#GUID-D25F0A92-12AE-490E-AB8F-C9E54E081CDD)
+
+```
+CONFIGURE CONTROLFILE AUTOBACKUP ON; 
+CONFIGURE CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE DISK TO '/disk2/%F';
+CONFIGURE CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE sbt TO 'cf_auto_%F';
+SHOW CONTROLFILE AUTOBACKUP;
+SHOW ALL;
+
+BACKUP DEVICE TYPE sbt 
+  TABLESPACE users 
+  INCLUDE CURRENT CONTROLFILE;
+BACKUP CURRENT CONTROLFILE;
+BACKUP AS COPY
+  CURRENT CONTROLFILE 
+  FORMAT '/tmp/control01.ctl';
+```
+
+[Backing Up Server Parameter Files with RMAN](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/backing-up-database.html#GUID-D3E617F5-121C-41DC-A191-B3BA6D121B30)
+
+```
+BACKUP DEVICE TYPE sbt SPFILE;
+```
+
 #### [Part IV Managing RMAN Backups](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/part-managing-rman-backups.html#GUID-9B9779FA-2C8B-4D11-AC3B-F6FFA95AE2D1)
 
 ##### [Deleting RMAN Backups and Archived Redo Logs](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/maintaining-rman-backups.html#GUID-8C4B395D-7C24-485F-BEA0-A355821FB93D)
@@ -913,6 +1738,164 @@ FLASHBACK TABLE hr.temp_employees
 FLASHBACK TABLE hr.temp_employees
   TO TIMESTAMP TO_TIMESTAMP('2013-10-17 09:30:00', 'YYYY-MM-DD HH:MI:SS');
 ```
+
+##### [Performing RMAN Recovery: Advanced Scenarios](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/rman-recovery-advanced.html#GUID-EA9DB3ED-2481-47DD-908B-A314D5C3F730)
+
+###### [Recovering a NOARCHIVELOG Database with Incremental Backups](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/rman-recovery-advanced.html#GUID-18DC642E-DA14-47A9-9547-02F385CA47EA)
+
+```
+STARTUP FORCE MOUNT
+RESTORE DATABASE 
+  FROM TAG "consistent_whole_backup";
+RECOVER DATABASE NOREDO;
+ALTER DATABASE OPEN RESETLOGS;
+```
+
+###### [Restoring the Server Parameter File](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/rman-recovery-advanced.html#GUID-2B93E1AF-5ED1-4FAE-91BB-63362CADF7AD)
+
+To restore the server parameter file from autobackup:
+```
+STARTUP FORCE NOMOUNT;
+RUN 
+{
+  ALLOCATE CHANNEL c1 DEVICE TYPE sbt PARMS ...;
+  SET UNTIL TIME 'SYSDATE-7';
+  SET CONTROLFILE AUTOBACKUP FORMAT 
+    FOR DEVICE TYPE sbt TO '/disk1/control_files/autobackup_%F';
+  SET DBID 123456789;
+  RESTORE SPFILE
+    TO '/tmp/spfileTEMP.ora'
+    FROM AUTOBACKUP MAXDAYS 10;
+}
+STARTUP FORCE PFILE=/tmp/init.ora;
+```
+
+
+[Restoring the Server Parameter File from a Control File Autobackup](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/rman-recovery-advanced.html#GUID-8077F97F-76A7-49DC-8C1E-5FE8ADD0914F)
+
+```
+SET DBID 320066378;
+RUN 
+{
+  SET CONTROLFILE AUTOBACKUP FORMAT 
+    FOR DEVICE TYPE DISK TO 'autobackup_format';
+  RESTORE SPFILE FROM AUTOBACKUP;
+}
+```
+
+[Creating an Initialization Parameter File with RMAN](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/rman-recovery-advanced.html#GUID-AE7CD28F-3187-44DD-BEC2-E43839EC63E6)
+
+```
+RESTORE SPFILE TO PFILE '/tmp/initTEMP.ora';
+STARTUP FORCE PFILE='/tmp/initTEMP.ora';
+```
+
+###### [Performing Recovery with a Backup Control File](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/rman-recovery-advanced.html#GUID-77C2B092-4BEB-4BAC-91F9-7368EA16A2B6)
+
+[About Recovery with a Backup Control File](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/rman-recovery-advanced.html#GUID-7B78C0E8-423A-4BE0-88D5-AB903DB49608)
+
+[About Control File Locations During RMAN Restore](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/rman-recovery-advanced.html#GUID-64F583E8-2E1A-4F13-847B-5FCEFA9E008A)
+
+```
+RESTORE CONTROLFILE TO '/tmp/my_controlfile';
+```
+
+[About RMAN Recovery With and Without a Recovery Catalog](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/rman-recovery-advanced.html#GUID-FE57B2EA-428A-4408-BBB5-D9392D6B0F8B)
+
+```
+SET DBID 320066378;
+RUN
+{
+  SET CONTROLFILE AUTOBACKUP FORMAT 
+    FOR DEVICE TYPE DISK TO 'autobackup_format';
+  RESTORE CONTROLFILE FROM AUTOBACKUP;
+}
+```
+
+[About RMAN Recovery When Using a Fast Recovery Area](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/rman-recovery-advanced.html#GUID-918B5EE1-DBE9-464E-B8F9-454E1F94136A)
+
+```
+CROSSCHECK BACKUP DEVICE TYPE sbt;
+```
+
+[Performing Recovery with a Backup Control File and No Recovery Catalog](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/rman-recovery-advanced.html#GUID-927C5614-DC12-4B58-B261-EBD5F08A4202)
+
+```
+STARTUP NOMOUNT;
+SET DBID 676549873;
+RUN 
+{
+  # Optionally, set upper limit for eligible time stamps of control file 
+  # backups
+  # SET UNTIL TIME '09/10/2013 13:45:00';
+  # Specify a nondefault autobackup format only if required
+  # SET CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE DISK 
+  #   TO '?/oradata/%F.bck';
+  ALLOCATE CHANNEL c1 DEVICE TYPE sbt PARMS '...'; # allocate manually
+  RESTORE CONTROLFILE FROM AUTOBACKUP
+    MAXSEQ 100           # start at sequence 100 and count down
+    MAXDAYS 180;         # start at UNTIL TIME and search back 6 months
+  ALTER DATABASE MOUNT;
+}
+# Now use automatic channels configured in restored control file
+RESTORE DATABASE UNTIL SEQUENCE 13244;
+RECOVER DATABASE UNTIL SEQUENCE 13244;
+ALTER DATABASE OPEN RESETLOGS;
+```
+
+#### [Part VIII Performing User-Managed Backup and Recovery](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/part-user-managed-backup-recovery.html#GUID-F74964D7-F1D1-4401-827A-32D3E51BB41D)
+
+##### [Performing User-Managed Database Flashback and Recovery](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/user-managed-flashback-dbpitr.html#GUID-704F6AB0-04C4-4345-913B-B316DD06D05E)
+
+##### [Performing User-Managed Recovery: Advanced Scenarios](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/user-managed-recovery-advanced.html#GUID-24903185-E2CE-452E-8370-E4A47AD2632B)
+
+###### [Responding to the Loss of a Subset of the Current Control Files](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/user-managed-recovery-advanced.html#GUID-22AD5382-06ED-4FDF-BDD4-C8CD682F83E0)
+
+[Copying a Multiplexed Control File to a Default Location](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/user-managed-recovery-advanced.html#GUID-A4F29C29-95A7-4F05-8638-9C921AF9E0DC)
+
+```
+SQL> SHUTDOWN ABORT
+% cp /oracle/good_cf.f /oracle/dbs/bad_cf.f
+SQL> STARTUP
+```
+
+[Copying a Multiplexed Control File to a Nondefault Location](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/user-managed-recovery-advanced.html#GUID-49F97453-C0B3-4F18-B94C-63FB5C780BC3)
+
+```
+SQL> SHUTDOWN ABORT
+% cp /disk1/oradata/trgt/control01.dbf /new_disk/control01.dbf
+CONTROL_FILES='/disk1/oradata/trgt/control01.dbf','/new_disk/control02.dbf'
+SQL> STARTUP
+```
+
+###### [Recovering After the Loss of All Current Control Files](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/user-managed-recovery-advanced.html#GUID-3913B513-ECF0-469A-A50A-A5A573C85DC0)
+
+[Recovering with a Backup Control File in the Default Location](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/user-managed-recovery-advanced.html#GUID-B798CEB4-E8BE-467A-B17D-DBB993E912BE)
+
+```
+SQL> SHUTDOWN ABORT
+SQL> STARTUP MOUNT 
+SQL> RECOVER DATABASE USING BACKUP CONTROLFILE UNTIL CANCEL
+SQL> ALTER DATABASE OPEN RESETLOGS;
+```
+
+[Recovering with a Backup Control File in a Nondefault Location](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/user-managed-recovery-advanced.html#GUID-48CAA587-BD0E-4F94-BD6B-BF21520E53EF)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Data Guard
 
