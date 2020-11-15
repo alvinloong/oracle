@@ -815,19 +815,135 @@ SELECT SPID, STID, PROGRAM FROM V$PROCESS ORDER BY SPID;
 
 [Figure 15-4](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/cncpt/process-architecture.html#GUID-D3174B3E-BCCA-473F-961E-84A36FD5C372__BABEACIA)
 
+## [Database Reference](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/index.html)
 
+### [Part I Initialization Parameters](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/initialization-parameters.html#GUID-6F1C3203-0AA0-4AF1-921C-A027DD7CB6A9)
 
+#### [Initialization Parameters](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/initialization-parameters-2.html#GUID-FD266F6F-D047-4EBB-8D96-B51B1DCA2D61)
 
+##### [LOG_ARCHIVE_CONFIG](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/LOG_ARCHIVE_CONFIG.html#GUID-4DABDBE9-04B6-44D2-B93D-DAB15EA71427)
 
+##### [LOG_ARCHIVE_DEST](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/LOG_ARCHIVE_DEST.html#GUID-AACE967D-EF85-43F4-B895-5E510ABADCC3)
 
+##### [LOG_ARCHIVE_DEST_n](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/LOG_ARCHIVE_DEST_n.html#GUID-10BD97BF-6295-4E85-A1A3-854E15E05A44)
 
+##### [LOG_ARCHIVE_DEST_STATE_n](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/LOG_ARCHIVE_DEST_STATE_n.html#GUID-983A9C52-3046-4286-AEA7-800741EE0561)
 
+### [Part II Static Data Dictionary Views](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/static-data-dictionary-views.html#GUID-8865F65B-EF6D-44A5-B0A1-3179EFF0C36A)
 
+#### [Static Data Dictionary Views: DBA_2PC_NEIGHBORS to DBA_HIST_JAVA_POOL_ADVICE](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/static-data-dictionary-views-3.html#GUID-085A6CC5-3EF3-40BF-89D4-9C49B0097B2D)
 
+##### [DBA_DATA_FILES](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/DBA_DATA_FILES.html#GUID-0FA17297-73ED-4B5D-B511-103993C003D3)
 
+```
+COL tablespace_name FOR a30;
+COL tablespace_size FOR a10;
+SET pagesize 1000
+SET linesize 1000
+SELECT tablespace_name,round(sum(bytes)/1024/1024/1024,1) AS tablespace_size_GB FROM dba_data_files GROUP BY tablespace_name ORDER BY 2 DESC;
+SELECT file_name, file_id, tablespace_name,round(bytes/1024/1024/1024,1) AS file_size_GB, status FROM dba_data_files ORDER BY file_id;
+```
 
+### [Part III  Dynamic Performance Views](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/dynamic-performance-views.html#GUID-8C5690B0-DE10-4460-86DF-80111869CF4C)
 
+#### [Dynamic Performance (V$) Views: V$ACCESS to V$HVMASTER_INFO](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/dynamic-performance-v-views-1.html#GUID-A634ED26-2334-40F5-A016-22973F54BEDA)
 
+##### [About Dynamic Performance Views](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/about-dynamic-performance-views.html#GUID-F66BEE0B-8091-48A3-975B-376D23B8B4E8)
+
+###### [V$ Views](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/about-dynamic-performance-views.html#GUID-2B9DD73A-4C3A-467A-A934-01B705AB77A8)
+
+###### [GV$ Views](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/about-dynamic-performance-views.html#GUID-884B21B1-7C87-41E1-8F97-C4668704AF30)
+
+In Oracle Real Application Clusters, querying a `GV$` view retrieves the `V$` view information from all qualified instances. In addition to the `V$` information, each `GV$` view contains an extra column named `INST_ID` of data type `NUMBER`.
+
+```
+SELECT * FROM GV$LOCK WHERE INST_ID = 2 OR INST_ID = 5;
+```
+
+##### [V$ACTIVE_INSTANCES](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/V-ACTIVE_INSTANCES.html#GUID-3F06BAD1-C0F2-4FA7-9B5D-61C318F878E6)
+
+```
+SELECT * FROM v$active_instances;
+SELECT decode(count(*), 0, 'No', 'Yes') RAC FROM ( SELECT 1 FROM v$active_instances WHERE rownum = 1 );
+```
+
+##### [V$CONTROLFILE](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/V-CONTROLFILE.html#GUID-C285E8C5-6A2D-44B1-BDF8-F880B5F088C4)
+
+`INVALID` if the name cannot be determined (which should not occur); **NULL** if the name can be determined
+
+```
+SET pagesize 1000
+SET linesize 1000
+COL name FOR a50;
+COL is_recovery_dest_file FOR a30;
+
+SELECT name FROM v$controlfile;
+SELECT name,status FROM v$controlfile;
+SELECT rpad(substr(name,1,50),51,' ') "control file name" FROM gv$controlfile;
+SELECT
+    status,
+    name,
+    is_recovery_dest_file,
+    block_size,
+    file_size_blks,
+    con_id
+FROM
+    v$controlfile;
+```
+
+##### [V$DATABASE](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/V-DATABASE.html#GUID-C62A7B96-2DD4-4E70-A0D9-26EE4BFBE256)
+
+```
+SET pagesize 300
+SET linesize 300
+COL name FOR a20;
+COL db_unique_name FOR a30;
+COL log_mode FOR a15;
+COL protection_mode FOR a20;
+COL dataguard_broker FOR a15;
+COL flashback_on FOR a15;
+COL fs_failover_status FOR a25;
+COL database_role FOR a20;
+COL open_mode FOR a30;
+COL switchover_status FOR a30;
+
+SELECT name, created,log_mode,protection_mode,dataguard_broker,flashback_on,db_unique_name,fs_failover_status,database_role,open_mode,switchover_status FROM v$database;
+SELECT database_role,open_mode FROM v$database;
+
+SET pagesize 300
+SET linesize 300
+COL database_role FOR a20;
+COL open_mode FOR a30;
+COL switchover_status FOR a30;
+SELECT database_role,open_mode,switchover_status FROM v$database;
+SELECT name,db_unique_name,created FROM v$database;
+SELECT name, created,log_mode,dataguard_broker,flashback_on,db_unique_name FROM v$database;
+SELECT
+    controlfile_type,
+    controlfile_created,
+    controlfile_sequence#,
+    controlfile_change#,
+    controlfile_time
+FROM
+    v$database;
+```
+
+#### [Dynamic Performance (V$) Views: V$IM_COLUMN_LEVEL to V$RULE_SET_AGGREGATE_STATS](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/dynamic-performance-v-views-2.html#GUID-B200B2D6-08D4-49B0-9FD9-8AF6AED37202)
+
+##### [V$INSTANCE](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/V-INSTANCE.html#GUID-6A0C9B51-1714-4223-B166-9D54C4E65D67)
+
+```
+SELECT * FROM v$instance;
+SELECT count(*) FROM gv$instance;
+```
+
+##### [V$PARAMETER](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/V-PARAMETER.html#GUID-C86F3AB0-1191-447F-8EDF-4727D8693754)
+
+```
+COL name FOR a30;
+COL value FOR a30;
+SELECT name, value FROM v$parameter WHERE name='cluster_database';
+```
 
 ## [Database Backup and Recovery User's Guide](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/index.html)
 
@@ -945,6 +1061,28 @@ MERGE INTO bonuses D
 
 ## [SQL*Plus User's Guide and Reference](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqpug/index.html)
 
+### [Part I SQL*Plus Getting Started](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqpug/getting-started.html#GUID-0A5854C2-ECDD-4068-9A9F-4BDE8AABEB51)
+
+#### [Starting SQL*Plus](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqpug/starting-SQL-Plus.html#GUID-9FEB89E9-6392-4C43-95D3-51B72C9EB982)
+
+##### [SQL*Plus Program Syntax](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqpug/starting-SQL-Plus.html#GUID-41344314-43A7-4391-AABF-6A98EA98BEDF)
+
+###### [Options](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqpug/starting-SQL-Plus.html#GUID-073C1D33-E424-4791-8C79-8FA7B3CDEC43)
+
+[SILENT Option](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqpug/starting-SQL-Plus.html#GUID-D4929F5A-29F5-41FB-AF88-AC52ED7C75D9)
+
+```
+sqlplus -silent
+sqlplus -silent /nolog
+```
+
+###### [Logon](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqpug/starting-SQL-Plus.html#GUID-0B78B28B-A989-4A75-BBD9-FA688C990DB1)
+
+```
+sqlplus /nolog
+sqlplus -silent /nolog
+```
+
 ### [Part III SQL*Plus Reference](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqpug/SQL-Plus-reference.html#GUID-C3D4A718-56AD-4872-ADFF-A216FF70EDF2)
 
 #### [SQL*Plus Command Reference](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sqpug/SQL-Plus-command-reference.html#GUID-177F24B7-D154-4F8B-A05B-7568079800C6)
@@ -973,6 +1111,206 @@ where *cdb_options* has the following syntax:
 
 ```
 root_connection_options | pdb_connection_options
+```
+
+# [Database Utilities](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/)
+
+## [Part I Oracle Data Pump](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/oracle-data-pump.html#GUID-501A9908-BCC5-434C-8853-9A6096766B5A)
+
+### [Data Pump Export](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/oracle-data-pump-export-utility.html#GUID-5F7380CE-A619-4042-8D13-1F7DDE429991)
+
+#### [Parameters Available in Export's Command-Line Mode](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/oracle-data-pump-export-utility.html#GUID-33880357-06B1-4CA2-8665-9D41347C6705)
+
+##### [CONTENT](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/oracle-data-pump-export-utility.html#GUID-F7994C75-CC86-4A5D-AA9A-361A94FD9C03)
+
+```
+expdp hr DIRECTORY=dpump_dir1 DUMPFILE=hr.dmp CONTENT=METADATA_ONLY
+expdp username/password DIRECTORY=directory_object_name \
+                        DUMPFILE=dumpfile_name \
+                        TABLES=table_names|TABLESPACES=tablespace_names|FULL=y \
+                        CONTENT=metadata_only
+```
+
+##### [DIRECTORY](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/oracle-data-pump-export-utility.html#GUID-D7F1C0E8-E3CF-495E-9596-E08AEE36BB6B)
+
+```
+DUMPDIR_NAME=xxx
+DUMPDIR=xxx
+mkdir -p $DUMPDIR
+create or replace directory ${DUMPDIR_NAME} as '$DUMPDIR';
+grant read, write on directory ${DUMPDIR_NAME} to scott;
+expdp scott/xxx DUMPFILE=x%U.dmp LOGFILE=x.log DIRECTORY=${DUMPDIR_NAME} SCHEMAS=x PARALLEL=4 exclude=STATISTICS
+```
+
+##### [DUMPFILE](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/oracle-data-pump-export-utility.html#GUID-A6300021-419F-4C1D-AFF1-38FE1123326B)
+
+```
+expdp scott/xxx DUMPFILE=x%U.dmp LOGFILE=x.log DIRECTORY=${DUMPDIR_NAME} SCHEMAS=x PARALLEL=4 EXCLUDE=STATISTICS
+```
+
+##### [EXCLUDE](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/oracle-data-pump-export-utility.html#GUID-64249296-2AFF-40EA-AA44-BC0A1B5A1E7C)
+
+Enables you to filter the metadata that is exported by specifying objects and object types to be excluded from the export operation.
+
+```
+expdp scott/xxx DUMPFILE=x%U.dmp LOGFILE=x.log DIRECTORY=${DUMPDIR_NAME} SCHEMAS=x PARALLEL=4 exclude=STATISTICS
+expdp hr DIRECTORY=dpump_dir1 DUMPFILE=hr_exclude.dmp EXCLUDE=VIEW,
+PACKAGE, FUNCTION
+
+```
+
+**Excluding Constraints**
+
+- `EXCLUDE=CONSTRAINT` excludes all constraints, except for any constraints needed for successful table creation and loading.
+- `EXCLUDE=REF_CONSTRAINT` excludes referential integrity (foreign key) constraints.
+
+**Excluding Grants and Users**
+
+Specifying `EXCLUDE`=`GRANT` excludes object grants on all object types and system privilege grants.
+
+Specifying `EXCLUDE`=`USER` excludes only the definitions of users, not the objects contained within users' schemas.
+
+##### [PARALLEL](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/oracle-data-pump-export-utility.html#GUID-55E6AC71-5CDE-410E-AB02-798AEC54F411)
+
+Specifies the maximum number of processes of active execution operating on behalf of the export job. This execution set consists of a combination of worker processes and parallel I/O server processes. 
+
+```
+expdp scott/xxx DUMPFILE=x%U.dmp LOGFILE=x.log DIRECTORY=${DUMPDIR_NAME} SCHEMAS=x PARALLEL=4 exclude=STATISTICS
+```
+
+##### [SCHEMAS](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/oracle-data-pump-export-utility.html#GUID-8B512637-E259-4F20-B7C9-DCD0BB501D09)
+
+```
+expdp scott/xxx DUMPFILE=x%U.dmp LOGFILE=x.log DIRECTORY=${DUMPDIR_NAME} SCHEMAS=x PARALLEL=4 exclude=STATISTICS
+expdp hr DIRECTORY=dpump_dir1 DUMPFILE=expdat.dmp SCHEMAS=hr,sh,oe
+```
+
+##### [TABLES](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/oracle-data-pump-export-utility.html#GUID-9D052182-6BD8-4167-B528-2E352C9CDBDB)
+
+Specifies that you want to perform a table-mode export.
+
+```
+expdp hr DIRECTORY=dpump_dir1 DUMPFILE=tables.dmp
+TABLES=employees,jobs,departments
+expdp hr DIRECTORY=dpump_dir1 DUMPFILE=tables_part.dmp
+TABLES=sh.sales:sales_Q1_2012,sh.sales:sales_Q2_2012
+```
+
+### [Data Pump Import](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/datapump-import-utility.html#GUID-D11E340E-14C6-43B8-AB09-6335F0C1F71B)
+
+#### [Parameters Available in Import's Command-Line Mode](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/datapump-import-utility.html#GUID-BA74D4F6-2840-4002-A673-0A7D9CBB3D78)
+
+##### [CONTENT](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/datapump-import-utility.html#GUID-1609551D-212C-4DB1-B9D7-508FB75DD20C)
+
+```
+impdp hr DIRECTORY=dpump_dir1 DUMPFILE=expfull.dmp CONTENT=METADATA_ONLY
+```
+
+##### [DIRECTORY](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/datapump-import-utility.html#GUID-DA339AA4-C040-4D3B-A85F-DD3E470D452A)
+
+```
+impdp hr DIRECTORY=dpump_dir1 DUMPFILE=expfull.dmp 
+LOGFILE=dpump_dir2:expfull.log
+```
+
+##### [SQLFILE](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/datapump-import-utility.html#GUID-8453D1F2-FDA9-4658-B42E-9D5B75AFEED9)
+
+```
+impdp hr DIRECTORY=dpump_dir1 DUMPFILE=expfull.dmp
+SQLFILE=dpump_dir2:expfull.sql
+```
+
+A SQL file named `expfull.sql` is written to `dpump_dir2`.
+
+```
+SET linesize 200
+SET pagesize 200
+COL owner FOR a15;
+COL directory_name FOR a30;
+COL directory_path FOR a70;
+SELECT * FROM dba_directories;
+CREATE OR REPLACE DIRECTORY dir_test AS '/tmp/backup/';
+GRANT READ, WRITE ON DIRECTORY dir_test TO user1;
+GRANT DATAPUMP_EXP_FULL_DATABASE to user1;
+GRANT DATAPUMP_IMP_FULL_DATABASE to user1;
+ALTER USER user1 DEFAULT ROLE ALL;
+expdp user1 DIRECTORY=dir_test DUMPFILE=test_schema.dmp FULL=y CONTENT=metadata_only
+impdp user1 DIRECTORY=dir_test DUMPFILE=test_schema.dmp SQLFILE=dir_test:test_schema.sql
+```
+
+## [Part IV Other Utilities](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/other-oracle-utilities.html#GUID-FCEA49BD-D3AF-4337-88F1-3A23545F35A6)
+
+### [Original Export](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/oracle-original-export-utility.html#GUID-901CBBE0-65FB-439E-942D-F2038C18BCD2)
+
+#### [Export Parameters](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/oracle-original-export-utility.html#GUID-125385E7-A32B-4B52-B1E3-3E3878E0C7B3)
+
+##### [BUFFER](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/oracle-original-export-utility.html#GUID-0ADF8770-F909-410D-910F-507A0A1F1D4A)
+
+Specifies the size, in bytes, of the buffer used to fetch rows.
+
+```
+exp scott/xxx file=x.dmp log=x.log buffer=10240000 owner=x
+```
+
+##### [CONTENT](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/oracle-data-pump-export-utility.html#GUID-F7994C75-CC86-4A5D-AA9A-361A94FD9C03)
+
+```
+CONTENT=[ALL | DATA_ONLY | METADATA_ONLY]
+```
+
+- `ALL` unloads both data and metadata. This is the default.
+- `DATA_ONLY` unloads only table row data; no database object definitions are unloaded.
+- `METADATA_ONLY` unloads only database object definitions; no table row data is unloaded. Be aware that if you specify `CONTENT=METADATA_ONLY`, then when the dump file is subsequently imported, any index or table statistics imported from the dump file will be locked after the import.
+
+```
+expdp hr DIRECTORY=dpump_dir1 DUMPFILE=hr.dmp CONTENT=METADATA_ONLY
+```
+
+##### [DIRECT](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/oracle-original-export-utility.html#GUID-568F98CF-21C2-4E12-A27B-88E771E4988A)
+
+Specifying `DIRECT=y` causes Export to extract data by reading the data directly, bypassing the SQL command-processing layer (evaluating buffer).
+
+```
+exp scott/xxx file=x.dmp log=x.log direct=y recordlength=65535 owner=x
+```
+
+##### [FILE](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/oracle-original-export-utility.html#GUID-0FACAACB-5B1D-4249-BE03-35EFD59FC5E1)
+
+```
+exp scott/xxx file=x.dmp log=x.log buffer=10240000 owner=x
+exp scott FILE = dat1.dmp, dat2.dmp, dat3.dmp FILESIZE=2048
+```
+
+##### [FILESIZE](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/oracle-original-export-utility.html#GUID-D12380E1-F2BF-4471-9AEF-911BED8871F5)
+
+```
+exp scott FILE = dat1.dmp, dat2.dmp, dat3.dmp FILESIZE=2048
+```
+
+##### [LOG](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/oracle-original-export-utility.html#GUID-0FDE4A82-6EC5-4874-8CA1-A2153A5BDD28)
+
+```
+exp scott/xxx file=x.dmp log=x.log buffer=10240000 owner=x
+```
+
+##### [OWNER](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/oracle-original-export-utility.html#GUID-5820B9FE-BD28-49D6-AF9B-BBC0458B490D)
+
+Indicates that the export is a user-mode export and lists the users whose objects will be exported. If the user initiating the export is the database administrator (DBA), then multiple users can be listed.
+
+```
+exp scott/xxx file=x.dmp log=x.log buffer=10240000 owner=x
+```
+
+##### [RECORDLENGTH](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/oracle-original-export-utility.html#GUID-CC0271E1-20B2-445C-98E9-6088BEA5D761)
+
+```
+exp scott/xxx file=x.dmp log=x.log direct=y recordlength=65535 owner=x
+```
+
+[ROWS](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sutil/oracle-original-export-utility.html#GUID-6DA6357B-B674-440B-AE5F-7E07643B590A)
+
+```
+exp scott/xxx GRANTS=y CONSTRAINTS=y ROWS=n
 ```
 
 # [Development](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/development.html)
@@ -1479,6 +1817,102 @@ TKPROF can also do the following:
 
 ### [Database Backup and Recovery Reference](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/rcmrf/index.html)
 
+#### [RMAN Commands: RECOVER to VALIDATE](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/rcmrf/rman-commands-recover-to-validate.html#GUID-C3809416-7521-4C18-AA50-B2B52A56DCFF)
+
+##### [RUN](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/rcmrf/RUN.html#GUID-88250EEF-DC49-42A9-822C-4011B1345C7B)
+
+```
+rman target / LOG=rman.log <<EOF
+
+run {
+...
+}
+EOF
+```
+
+
+
+```
+RMAN> SHOW DEVICE TYPE;
+
+RMAN configuration parameters for database with db_unique_name PROD1 are:
+CONFIGURE DEVICE TYPE DISK PARALLELISM 1 BACKUP TYPE TO BACKUPSET; # default
+CONFIGURE DEVICE TYPE SBT_TAPE PARALLELISM 1 BACKUP TYPE TO BACKUPSET; # default
+RUN
+{
+  ALLOCATE CHANNEL c1 DEVICE TYPE DISK FORMAT "/disk2/%U";
+  BACKUP DATABASE PLUS ARCHIVELOG;
+}
+RUN { EXECUTE SCRIPT backup_db; }
+```
+
+##### [SQL](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/rcmrf/SQL.html#GUID-D55D7184-60DA-4B11-B483-8F14726AFE43)
+
+```
+ALTER TABLESPACE users ADD DATAFILE '/disk1/oradata/users02.dbf' SIZE 1M AUTOEXTEND ON NEXT 10K MAXSIZE 2M;
+```
+
+##### [SQL (Quoted)](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/rcmrf/SQL-Quoted.html#GUID-D8D11F06-005D-40EE-B041-BC46C52E71AE)
+
+This example backs up a tablespace and then archives all unarchived online redo logs.
+
+```
+BACKUP TABLESPACE users;
+sql 'ALTER SYSTEM ARCHIVE LOG CURRENT';
+```
+
+```
+sql 'ALTER TABLESPACE users ADD DATAFILE ''/disk1/oradata/users02.dbf'' 
+  SIZE 100K AUTOEXTEND ON NEXT 10K MAXSIZE 100K';
+```
+
+#### [**B** Deprecated RMAN Syntax](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/rcmrf/deprecated-rman-syntax.html#GUID-E2B27FFB-FAF1-4622-94E5-E4D51D61E86B)
+
+**Table B-1** ***Deprecated RMAN Syntax***
+
+| Deprecated in Release | Deprecated Syntax                                            | Preferred Current Syntax                                     |
+| :-------------------- | :----------------------------------------------------------- | :----------------------------------------------------------- |
+| 12.1                  | `ALTER DATABASE`                                             | n/a                                                          |
+| 11.2.0                | [CONFIGURE](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/rcmrf/CONFIGURE.html#GUID-B5094E73-C26C-4FED-AE39-8C2E9540050A) or [SET](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/rcmrf/SET.html#GUID-BC501B5C-4CD0-485D-AA18-27E2894024C3) `COMPRESSION ALGORITHM 'ZLIB'` | [CONFIGURE](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/rcmrf/CONFIGURE.html#GUID-B5094E73-C26C-4FED-AE39-8C2E9540050A) or [SET](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/rcmrf/SET.html#GUID-BC501B5C-4CD0-485D-AA18-27E2894024C3) `COMPRESSION ALGORITHM 'MEDIUM'` |
+| 11.2.0                | [CONFIGURE](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/rcmrf/CONFIGURE.html#GUID-B5094E73-C26C-4FED-AE39-8C2E9540050A) or [SET](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/rcmrf/SET.html#GUID-BC501B5C-4CD0-485D-AA18-27E2894024C3) `COMPRESSION ALGORITHM 'BZIP2'` | [CONFIGURE](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/rcmrf/CONFIGURE.html#GUID-B5094E73-C26C-4FED-AE39-8C2E9540050A) or [SET](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/rcmrf/SET.html#GUID-BC501B5C-4CD0-485D-AA18-27E2894024C3) `COMPRESSION ALGORITHM 'BASIC'` |
+| 11.2.0                | `V$FLASH_RECOVERY_AREA_USAGE`                                | `V$RECOVERY_AREA_USAGE`                                      |
+| 11.1.0                | `CONVERT` `ON TARGET PLATFORM`                               | `CONVERT` `ON DESTINATION PLATFORM`                          |
+| 11.1.0                | `UNTIL RESTORE POINT`                                        | `TO RESTORE POINT`                                           |
+| 11.1.0                | `BACKUP` `... AS STANDBY`                                    | n/a                                                          |
+| 11.1.0                | `... KEEP [LOGS | NOLOGS]`                                   | `... KEEP`                                                   |
+| 11.1.0                | `BLOCKRECOVER`                                               | `RECOVER`                                                    |
+| 10.0.1                | `BACKUP` `... INCREMENTAL LEVEL` `[2,3,4]`                   | Levels *other than* `0` and `1` are deprecated.              |
+| 10.0.1                | `BACKUP` `... PARMS`                                         | `CONFIGURE`` CHANNEL ... PARMS`                              |
+| 10.0.1                | `COPY`                                                       | `BACKUP` `AS COPY`                                           |
+| 10.0.1                | `CREATE CATALOG` `TABLESPACE`                                | `CREATE CATALOG`                                             |
+| 10.0.1                | `LIST` `... BY BACKUP [SUMMARY]`                             | n/a                                                          |
+| 10.0.1                | `LIST` `... VERBOSE`                                         | n/a                                                          |
+| 10.0.1                | `RESTORE`` ... PARMS`                                        | `CONFIGURE` `CHANNEL ... PARMS`                              |
+| 10.0.1                | `SEND` `... PARMS`                                           | `CONFIGURE` `CHANNEL ... PARMS`                              |
+| 9.2                   | `REPLICATE`                                                  | `RESTORE` `CONTROLFILE FROM ...`                             |
+| 9.2                   | `SET` `AUTOLOCATE`                                           | Enabled by default                                           |
+| 9.0.1                 | `ALLOCATE CHANNEL FOR DELETE`                                | n/a                                                          |
+| 9.0.1                 | `ALLOCATE CHANNEL`` ... TYPE`                                | `CONFIGURE` `CHANNEL ... DEVICE TYPE`                        |
+| 9.0.1                 | `ALLOCATE CHANNEL` `... KBYTES`                              | `CONFIGURE` `CHANNEL ... MAXPIECESIZE`                       |
+| 9.0.1                 | `ALLOCATE CHANNEL` `... READRATE`                            | `CONFIGURE` `CHANNEL ... RATE`                               |
+| 9.0.1                 | `... ARCHIVELOG ... LOGSEQ`                                  | `... ARCHIVELOG ... SEQUENCE`                                |
+| 9.0.1                 | `BACKUP` `... SETSIZE`                                       | `BACKUP` `...` `MAXSETSIZE`                                  |
+| 9.0.1                 | `CHANGE` `... CROSSCHECK`                                    | `CROSSCHECK`                                                 |
+| 9.0.1                 | `CHANGE` `... DELETE`                                        | `DELETE`                                                     |
+| 9.0.1                 | `REPORT` `... AT LOGSEQ`                                     | `REPORT ... AT SEQUENCE`                                     |
+| 9.0.1                 | `SET` `AUXNAME`                                              | `CONFIGURE` `AUXNAME`                                        |
+| 9.0.1                 | `SET` `DUPLEX`                                               | `SET` `BACKUP COPIES``CONFIGURE` `BACKUP COPIES`             |
+| 9.0.1                 | `SET` `LIMIT CHANNEL ...`                                    | `ALLOCATE CHANNEL` `...``CONFIGURE` `CHANNEL ...`            |
+| 9.0.1                 | `SET` `SNAPSHOT`                                             | `CONFIGURE` `SNAPSHOT`                                       |
+| 9.0.1                 | `UNTIL LOGSEQ` (see *`untilClause`*)                         | `UNTIL SEQUENCE` (see *`untilClause`*)                       |
+| 8.1.7                 | `CONFIGURE` `COMPATIBLE`                                     | n/a                                                          |
+| 8.1.5                 | `ALLOCATE CHANNEL` `CLONE`                                   | `CONFIGURE` `AUXILIARY CHANNEL`                              |
+| 8.1.5                 | `CHANGE` `... VALIDATE`                                      | `CROSSCHECK`                                                 |
+| 8.1.5                 | `CLONE` (see `RMAN`)                                         | `AUXILIARY` (see `RMAN`)                                     |
+| 8.1.5                 | `CONFIGURE` `CLONE`                                          | `CONFIGURE` `AUXILIARY`                                      |
+| 8.1.5                 | `MSGLOG` (see `RMAN`)                                        | `LOG` (see `RMAN`)                                           |
+| 8.1.5                 | `RCVCAT` (see `RMAN`)                                        | `CATALOG` (see `RMAN`)                                       |
+
 ### [Database Backup and Recovery User's Guide](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/index.html)
 
 #### [Part I Overview of Backup and Recovery](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/part-overview-backup-recovery.html#GUID-CD5F857C-198E-4097-A5C8-F0D7E9C00D30)
@@ -1664,6 +2098,218 @@ RECOVER CORRUPTION LIST;
 RECOVER DATAFILE 1 BLOCK 233, 235 DATAFILE 2 BLOCK 100 TO 200;
 ```
 
+#### [Part II Starting and Configuring RMAN and Flashback Database](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/part-starting-configuring-rman.html#GUID-F25F36B4-B31E-438D-AAF9-C555BE8082B1)
+
+##### [Configuring the RMAN Environment](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-5155F8E6-6E35-4261-9CC1-F12DAA9FAC5B)
+
+###### [About Configuring the Environment for RMAN Backups](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-AD92E09D-0788-4AB5-8792-5F969C8D237A)
+
+[Showing and Clearing Persistent RMAN Configurations](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-44DD1FEB-3A95-436C-ABF9-03921B778155)
+
+```
+SHOW ALL;
+
+RMAN configuration parameters for database with db_unique_name PROD1 are:
+CONFIGURE RETENTION POLICY TO RECOVERY WINDOW OF 3 DAYS;
+CONFIGURE BACKUP OPTIMIZATION ON;
+CONFIGURE DEFAULT DEVICE TYPE TO DISK; # default
+CONFIGURE CONTROLFILE AUTOBACKUP ON; # default
+CONFIGURE CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE SBT_TAPE TO '%F'; # default
+CONFIGURE CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE DISK TO '%F'; # default
+CONFIGURE DEVICE TYPE 'SBT_TAPE' PARALLELISM 2 BACKUP TYPE TO COMPRESSED BACKUPSET;
+CONFIGURE DEVICE TYPE DISK PARALLELISM 1 BACKUP TYPE TO BACKUPSET; # default
+CONFIGURE DATAFILE BACKUP COPIES FOR DEVICE TYPE SBT_TAPE TO 1; # default
+CONFIGURE DATAFILE BACKUP COPIES FOR DEVICE TYPE DISK TO 1; # default
+CONFIGURE ARCHIVELOG BACKUP COPIES FOR DEVICE TYPE SBT_TAPE TO 1; # default
+CONFIGURE ARCHIVELOG BACKUP COPIES FOR DEVICE TYPE DISK TO 1; # default
+CONFIGURE CHANNEL DEVICE TYPE 'SBT_TAPE' PARMS 'ENV=(OB_DEVICE=tape1)';
+CONFIGURE MAXSETSIZE TO UNLIMITED; # default
+CONFIGURE ENCRYPTION FOR DATABASE OFF; # default
+CONFIGURE ENCRYPTION ALGORITHM 'AES128'; # default
+CONFIGURE COMPRESSION ALGORITHM 'BASIC' AS OF RELEASE 'DEFAULT' OPTIMIZE FOR LOAD TRUE ; # default
+CONFIGURE RMAN OUTPUT TO KEEP FOR 7 DAYS; # default
+CONFIGURE ARCHIVELOG DELETION POLICY TO NONE; # default
+CONFIGURE SNAPSHOT CONTROLFILE NAME TO '/disk1/oracle/dbs/snapcf_ev.f'; # default
+```
+
+```
+SHOW RETENTION POLICY;
+SHOW DEFAULT DEVICE TYPE;
+```
+
+```
+CONFIGURE BACKUP OPTIMIZATION CLEAR;
+CONFIGURE RETENTION POLICY CLEAR;
+CONFIGURE CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE DISK CLEAR;
+```
+
+[Configuring the Default Device for Backups: Disk or SBT](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-3845B630-DD47-4147-BA6E-8D677CAF1CC2)
+
+```
+BACKUP DEVICE TYPE sbt DATABASE;
+BACKUP DEVICE TYPE DISK DATABASE;
+```
+
+[Configuring the Default Type for Backups: Backup Sets or Copies](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-BC37B3E4-3338-4452-A363-DB882F2E9415)
+
+```
+CONFIGURE DEVICE TYPE DISK BACKUP TYPE TO COPY; # image copies
+CONFIGURE DEVICE TYPE DISK BACKUP TYPE TO BACKUPSET; # uncompressed
+CONFIGURE DEVICE TYPE DISK BACKUP TYPE TO COMPRESSED BACKUPSET;
+CONFIGURE DEVICE TYPE sbt BACKUP TYPE TO COMPRESSED BACKUPSET;
+```
+
+[Configuring Channels](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-911248BA-A742-426C-9B90-51214CFAF36B)
+
+[About Channel Configuration](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-06001DF9-43B5-4A93-BFBC-B03D718A8692)
+
+```
+CONFIGURE CHANNEL DEVICE TYPE DISK MAXPIECESIZE 2G;
+CONFIGURE CHANNEL DEVICE TYPE DISK FORMAT /tmp/%U;
+```
+
+[Configuring Channels for Disk](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-FAFF9171-43CF-493A-BA5A-AD9B59B2CFEB)
+
+```
+CONFIGURE CHANNEL DEVICE TYPE DISK FORMAT '/disk1/ora_df%t_s%s_s%p';
+```
+
+```
+CONFIGURE CHANNEL DEVICE TYPE DISK FORMAT '+dgroup1';
+```
+
+[Configuring Parallel Channels for Disk and SBT Devices](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-C6D6E615-892F-4586-B14D-1BA42CB0C457)
+
+As a rule, the number of channels used in executing a command should match the number of devices accessed.
+
+```
+RMAN> CONFIGURE DEVICE TYPE sbt PARALLELISM 2;
+
+old RMAN configuration parameters:
+CONFIGURE DEVICE TYPE 'SBT_TAPE' BACKUP TYPE TO COMPRESSED BACKUPSET PARALLELISM 1;
+new RMAN configuration parameters:
+CONFIGURE DEVICE TYPE 'SBT_TAPE' PARALLELISM 2 BACKUP TYPE TO COMPRESSED BACKUPSET;
+new RMAN configuration parameters are successfully stored
+```
+
+[Manually Overriding Configured Channels](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-1090ADE7-5B97-43FE-B9BA-B720C50CE6B7)
+
+```
+RUN 
+{
+  ALLOCATE CHANNEL c1 DEVICE TYPE DISK;
+  BACKUP TABLESPACE users;
+}
+```
+
+In this case, RMAN uses only the disk channel that you manually allocated within the [`RUN`](https://www.oracle.com/pls/topic/lookup?ctx=en/database/oracle/oracle-database/12.2/bradv&id=RCMRF151) command, overriding any defaults set by using `CONFIGURE` `DEVICE` `TYPE`, `CONFIGURE` `DEFAULT` `DEVICE`, or `CONFIGURE` `CHANNEL` settings.
+
+[Configuring Control File and Server Parameter File Autobackups](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-98BA7492-7108-4DF9-B5A2-21957072E308)
+
+```
+CONFIGURE CONTROLFILE AUTOBACKUP ON;
+CONFIGURE CONTROLFILE AUTOBACKUP OFF;
+```
+
+[Configuring the Control File Autobackup Format](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-C64AE090-0749-43EA-92C4-69DC6201A15F)
+
+The `%F` variable format translates into *`c-IIIIIIIIII-YYYYMMDD-QQ`*, with the placeholders defined as follows:
+
+- *`IIIIIIIIII`* stands for the DBID.
+- *`YYYYMMDD`* is a time stamp of the day the backup is generated.
+- *`QQ`* is the hexadecimal sequence that starts with `00` and has a maximum of `FF`.
+
+```
+CONFIGURE CONTROLFILE AUTOBACKUP FORMAT 
+  FOR DEVICE TYPE DISK TO '?/oradata/cf_%F';
+```
+
+The following example configures the autobackup to write to an Automatic Storage Management disk group:
+
+```
+CONFIGURE CONTROLFILE AUTOBACKUP FORMAT 
+  FOR DEVICE TYPE DISK TO '+dgroup1/%F';
+```
+
+Note:
+
+The valid formats for control file autobackups are: `%D`, `%I`, `%M`, `%Y`, `%F`, `%T`, `%d`, and `%n`. If you use formats other than these, you may not be able to restore the control file autobackup.
+
+To clear control file autobackup formats for a device:
+
+- Use the following commands:
+
+  ```
+  CONFIGURE CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE DISK CLEAR;
+  CONFIGURE CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE sbt CLEAR;
+  ```
+
+If you have set up a [**fast recovery area**](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/glossary.html#GUID-6E3CDD76-A573-4E5C-B12D-59C232C96C19) for the database, then you can direct control file autobackups to the fast recovery area by clearing the control file autobackup format for disk.
+
+Note:
+
+All files in the fast recovery area are maintained by Oracle Database and associated file names are maintained in the Oracle Managed Files (OMF) format.
+
+[Overriding the Configured Control File Autobackup Format](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-B04B5550-6DF9-4FDE-A03A-CFDF57518264)
+
+```
+SET CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE DISK TO 'controlfile_%F';
+BACKUP AS COPY DATABASE;
+RUN
+{
+  SET CONTROLFILE AUTOBACKUP FORMAT FOR DEVICE TYPE DISK TO '/tmp/%F.bck'; 
+  BACKUP AS BACKUPSET 
+    DEVICE TYPE DISK 
+    DATABASE;
+}
+```
+
+###### [Configuring the Backup Retention Policy](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-03DE4CF6-9D9F-4806-B5CA-CAA4CF5F2133)
+
+[Configuring a Redundancy-Based Retention Policy](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-E9AEAC34-6C40-40A1-BAF5-3EAE20417715)
+
+```
+CONFIGURE RETENTION POLICY TO REDUNDANCY 3;
+```
+
+[Configuring a Recovery Window-Based Retention Policy](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-95ABBB30-713E-4781-B5C3-6ADBEB658DE3)
+
+```
+CONFIGURE RETENTION POLICY TO RECOVERY WINDOW OF 7 DAYS;
+```
+
+[Disabling the Retention Policy](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-B668D2BC-8807-4308-AAB4-F3B85EA2B6C4)
+
+```
+CONFIGURE RETENTION POLICY TO NONE;
+```
+
+###### [Backup Optimization and the CONFIGURE command](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-914A65A7-872E-465B-95E5-0FD5ADAF6A9C)
+
+[Overview of Backup Optimization](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-ABA3E439-57C2-4AE7-BCEF-39A6663E7AA2)
+
+When you enable backup optimization, the `BACKUP` command skips backing up files when the identical file has been backed up to the specified device type.
+
+[Configuring Backup Optimization](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-D78276FA-E505-4542-9D78-2335B5F94922)
+
+```
+SHOW BACKUP OPTIMIZATION;
+CONFIGURE BACKUP OPTIMIZATION OFF;
+CONFIGURE BACKUP OPTIMIZATION ON;
+```
+
+###### [Configuring an Archived Redo Log Deletion Policy](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-FA142760-8ACB-43DA-939C-8407618D2D0F)
+
+[Enabling an Archived Redo Log Deletion Policy](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/configuring-rman-client-basic.html#GUID-97829620-DD75-4993-BE83-E67F5CA5BB18)
+
+```
+CONFIGURE ARCHIVELOG DELETION POLICY TO APPLIED ON ALL STANDBY;
+```
+
+
+
+
+
 #### [Part III Backing Up and Archiving Data](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/part-backing-up-archiving.html#GUID-008E0F84-E623-4467-8706-A99B34002DD6)
 
 ##### [RMAN Backup Concepts](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/rman-backup-concepts.html#GUID-B3380142-ABCD-437F-9E06-B219D74E6738)
@@ -1698,9 +2344,69 @@ BACKUP DEVICE TYPE sbt SPFILE;
 
 #### [Part IV Managing RMAN Backups](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/part-managing-rman-backups.html#GUID-9B9779FA-2C8B-4D11-AC3B-F6FFA95AE2D1)
 
-##### [Deleting RMAN Backups and Archived Redo Logs](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/maintaining-rman-backups.html#GUID-8C4B395D-7C24-485F-BEA0-A355821FB93D)
+##### [Maintaining RMAN Backups and Repository Records](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/maintaining-rman-backups.html#GUID-F5C3D045-279B-4AB3-8A91-3231A716402C)
 
-###### [Deleting All Backups and Copies](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/maintaining-rman-backups.html#GUID-0F82F489-C5FB-41C2-9687-AE9A5CD89406)
+###### [Overview of RMAN Backup and Repository Maintenance](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/maintaining-rman-backups.html#GUID-9B20BEFF-DE04-481C-8A50-46902B3B8B5F)
+
+[Basic Concepts of Backup and Repository Maintenance](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/maintaining-rman-backups.html#GUID-E5BBAAFE-1191-4A96-A63A-91EDF87F7C3E)
+
+[About Maintenance Commands in a Data Guard Environment](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/maintaining-rman-backups.html#GUID-F0C0A8F9-CBDF-4EDE-BAAF-F93CC37638B1)
+
+[About Crosschecks in a Data Guard Environment](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/maintaining-rman-backups.html#GUID-2792BBD5-2FD4-435B-85A3-0916D8EF6EC6)
+
+For a crosscheck, RMAN can only update the status of a file from `AVAILABLE` to `EXPIRED` when connected to the database associated with the file.
+
+###### [Updating the RMAN Repository](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/maintaining-rman-backups.html#GUID-93AE3A35-4B8C-424A-A5D4-CE14E160738C)
+
+Crosschecks are useful because they can do the following:
+
+- Update outdated information about backups that disappeared from disk or tape or became corrupted
+- Update the repository if you delete archived redo logs or other files with operating system commands
+
+[Crosschecking the RMAN Repository](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/maintaining-rman-backups.html#GUID-EFF8F8D1-D67C-4202-9C8E-DE74ADFF1FFB)
+
+[Crosschecking All Backups and Copies](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/maintaining-rman-backups.html#GUID-E1D38362-4C8E-4F16-AEBF-6A6429D7BB3A)
+
+```
+CROSSCHECK BACKUP;
+CROSSCHECK COPY;
+```
+
+[Crosschecking Specific Backup Sets and Copies](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/maintaining-rman-backups.html#GUID-C306C814-ACB3-49E7-AEBD-C0A7FC78D163)
+
+```
+LIST BACKUP;  # lists all backup sets, proxy copies, and image copies
+```
+
+
+
+```
+CROSSCHECK BACKUP;  # checks backup sets, proxy copies, and image copies
+CROSSCHECK COPY OF DATABASE;
+CROSSCHECK BACKUPSET 1338, 1339, 1340;
+CROSSCHECK BACKUPPIECE TAG 'nightly_backup';
+CROSSCHECK BACKUP OF ARCHIVELOG ALL SPFILE;
+CROSSCHECK BACKUP OF DATAFILE "?/oradata/trgt/system01.dbf"
+  COMPLETED AFTER 'SYSDATE-14';
+CROSSCHECK CONTROLFILECOPY '/tmp/control01.ctl';
+CROSSCHECK DATAFILECOPY 113, 114, 115;
+CROSSCHECK PROXY 789;
+```
+
+
+
+###### [Deleting RMAN Backups and Archived Redo Logs](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/maintaining-rman-backups.html#GUID-8C4B395D-7C24-485F-BEA0-A355821FB93D)
+
+[Overview of Deleting RMAN Backups](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/maintaining-rman-backups.html#GUID-8EFDE192-A385-457E-B00A-7A9ED7598223)
+
+[About Deletion of Archived Redo Logs](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/maintaining-rman-backups.html#GUID-8E5E9B7B-6627-4B14-8BFC-1C53EFB82FEF)
+
+```
+DELETE NOPROMPT ARCHIVELOG ALL;
+DELETE EXPIRED ARCHIVELOG ALL;
+```
+
+[Deleting All Backups and Copies](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/maintaining-rman-backups.html#GUID-0F82F489-C5FB-41C2-9687-AE9A5CD89406)
 
 ```
 CROSSCHECK BACKUP;
@@ -1709,7 +2415,23 @@ DELETE BACKUP;
 DELETE COPY;
 ```
 
-###### [Deleting Specified Backups and Copies](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/maintaining-rman-backups.html#GUID-D39FCF70-C71B-46C7-8ED5-94CF33A5611D)
+[Deleting Specified Backups and Copies](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/maintaining-rman-backups.html#GUID-D39FCF70-C71B-46C7-8ED5-94CF33A5611D)
+
+[Deleting Expired RMAN Backups and Copies](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/maintaining-rman-backups.html#GUID-ABB66655-6FAC-4375-AFA0-2E40634085A5)
+
+```
+CROSSCHECK BACKUP;
+DELETE EXPIRED BACKUP;
+DELETE NOPROMPT EXPIRED BACKUP;
+```
+
+[Deleting Obsolete RMAN Backups Based on Retention Policies](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/maintaining-rman-backups.html#GUID-DB5F52FF-58DE-4486-B0B3-D0EAEA26A776)
+
+```
+DELETE OBSOLETE;
+DELETE NOPROMPT OBSOLETE;
+
+```
 
 #### [Part V Diagnosing and Responding to Failures](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/part-diagnosing-responding-failures.html#GUID-ED89DC53-A816-450B-BFF4-A712D2694EEC)
 
@@ -1843,6 +2565,10 @@ RECOVER DATABASE UNTIL SEQUENCE 13244;
 ALTER DATABASE OPEN RESETLOGS;
 ```
 
+###### [Restoring a Database on a New Host](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/rman-recovery-advanced.html#GUID-6B71E7DF-A2B6-44F5-A8D5-B184BB41A768)
+
+
+
 #### [Part VIII Performing User-Managed Backup and Recovery](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/part-user-managed-backup-recovery.html#GUID-F74964D7-F1D1-4401-827A-32D3E51BB41D)
 
 ##### [Performing User-Managed Database Flashback and Recovery](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/user-managed-flashback-dbpitr.html#GUID-704F6AB0-04C4-4345-913B-B316DD06D05E)
@@ -1880,22 +2606,6 @@ SQL> ALTER DATABASE OPEN RESETLOGS;
 ```
 
 [Recovering with a Backup Control File in a Nondefault Location](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/bradv/user-managed-recovery-advanced.html#GUID-48CAA587-BD0E-4F94-BD6B-BF21520E53EF)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 ## Data Guard
 
@@ -2096,6 +2806,7 @@ srvctl modify database -d <db_unique_name> -startoption MOUNT
 ```
 SHOW FAST_START FAILOVER;
 ENABLE FAST_START FAILOVER;
+DISABLE FAST_START FAILOVER;
 START OBSERVER;
 SHOW CONFIGURATION FastStartFailoverThreshold;
 SHOW CONFIGURATION FastStartFailoverPmyShutdown;
@@ -2156,6 +2867,36 @@ REINSTATE DATABASE db_unique_name;
 START OBSERVER;
 SHOW FAST_START FAILOVER;
 ```
+
+###### [Enabling Fast-Start Failover](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/dgbkr/using-data-guard-broker-to-manage-switchovers-failovers.html#GUID-D26D79F2-0093-4C0E-98CD-224A5C8CBFA4)
+
+[When Fast-Start Failover Is Enabled and the Observer Is Running](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/dgbkr/using-data-guard-broker-to-manage-switchovers-failovers.html#GUID-824C3FEF-9D1D-4AA7-9C7A-DBDBADC77F47)
+
+This section lists the steps the master observer takes to determine if a fast-start failover is needed and then to perform one, if necessary.
+
+1. Monitor the environment to ensure the primary database is available.
+
+   The master observer waits the number of seconds specified by the `FastStartFailoverThreshold` configuration property before attempting a fast-start failover when the primary database has crashed or has lost connectivity with the observer, as in the following situations:
+
+   - The primary database loses its connections with both the observer and target standby database
+
+   - Instance failures
+
+     If a single-instance primary database (either Oracle RAC or non-Oracle RAC), or if all instances of an Oracle RAC primary database fail, the observer attempts a fast-start failover.
+
+   - Shutdown abort
+
+     If a single-instance primary database (either Oracle RAC or non-Oracle RAC), or if all instances of an Oracle RAC primary database are shut down with the `ABORT` option, the observer attempts a fast-start failover. Fast-start failover will not be attempted for the other types of database shutdown (`NORMAL`, `IMMEDIATE`, `TRANSACTIONAL`).
+
+2. Reconnect within the time specified by the `FastStartFailoverThreshold` property.
+
+3. Verify the target standby database is ready for failover.
+
+4. Initiate a fast-start failover.
+
+
+
+
 
 #### [Scenarios Using the DGMGRL Command-Line Interface](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/dgbkr/examples-using-data-guard-broker-DGMGRL-utility.html#GUID-D9018A5C-8C7A-4F6C-A7D3-B14E5AF7D4BC)
 
@@ -2356,7 +3097,7 @@ REINSTATE DATABASE 'cdb1';
 enable Flashback Database by issuing the following statements on each database:
 
 ```
-select flashback_on from v$database;
+SELECT flashback_on FROM v$database;
 SHUTDOWN IMMEDIATE;
 STARTUP MOUNT;
 ALTER DATABASE FLASHBACK ON;
@@ -2495,6 +3236,85 @@ lsnrctl status
 
 ##### [Creating a Physical Standby Database](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sbydb/creating-oracle-data-guard-physical-standby.html#GUID-B511FB6E-E3E7-436D-94B5-071C37550170)
 
+##### [Managing Physical and Snapshot Standby Databases](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sbydb/managing-oracle-data-guard-physical-standby-databases.html#GUID-B140C38B-DE01-4252-8422-7154018DDFEC)
+
+###### [Starting Up and Shutting Down a Physical Standby Database](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sbydb/managing-oracle-data-guard-physical-standby-databases.html#GUID-D7026A24-78EF-4C0D-84E5-41D767516565)
+
+###### [Opening a Physical Standby Database](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sbydb/managing-oracle-data-guard-physical-standby-databases.html#GUID-D5FB88EC-799D-40E7-80E1-19474E3167E4)
+
+[Real-time Query](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sbydb/managing-oracle-data-guard-physical-standby-databases.html#GUID-07CB190C-C248-4FF5-AB64-EAA9C6D42677)
+
+Use the following SQL statements to stop Redo Apply, open a standby instance read-only, and restart Redo Apply:
+
+```
+SQL> ALTER DATABASE RECOVER MANAGED STANDBY DATABASE CANCEL;
+SQL> ALTER DATABASE OPEN;
+SQL> ALTER DATABASE RECOVER MANAGED STANDBY DATABASE DISCONNECT;
+```
+
+**Example: Querying V$DATABASE to Check the Standby's Open Mode**
+
+```
+SQL> SELECT open_mode FROM V$DATABASE;
+ 
+OPEN_MODE
+--------------------
+READ ONLY
+```
+
+
+
+```
+SQL> ALTER DATABASE RECOVER MANAGED STANDBY DATABASE DISCONNECT;
+ 
+Database altered.
+```
+
+
+
+```
+SQL> SELECT open_mode FROM V$DATABASE;
+ 
+OPEN_MODE
+--------------------
+READ ONLY WITH APPLY
+```
+
+[Monitoring Apply Lag in a Real-time Query Environment](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sbydb/managing-oracle-data-guard-physical-standby-databases.html#GUID-C225DCBC-E9FB-4E86-9D19-A5D20C3A8AA5)
+
+```
+SQL> SELECT name, value, datum_time, time_computed FROM V$DATAGUARD_STATS
+WHERE name like 'apply lag';
+     
+    NAME         VALUE            DATUM_TIME              TIME_COMPUTED
+    ---------    -------------    -------------------     -------------------
+    apply lag    +00 00:00:00     05/27/2009 08:54:16     05/27/2009 08:54:17
+```
+
+#### [Part II Reference](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sbydb/oracle-data-guard-parameters-views.html#GUID-626518B4-BF38-4D93-A543-457D55CA5B75)
+
+##### [LOG_ARCHIVE_DEST_n Parameter Attributes](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sbydb/LOG_ARCHIVE_DEST_n-parameter-attributes.html#GUID-B04FC22C-F0B0-440F-BAF4-182EE547FCC1)
+
+###### [AFFIRM and NOAFFIRM](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sbydb/LOG_ARCHIVE_DEST_n-parameter-attributes.html#GUID-559248E6-B153-4B7B-A8A9-9CEE102088F0)
+
+###### [COMPRESSION](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sbydb/LOG_ARCHIVE_DEST_n-parameter-attributes.html#GUID-DD58C7C2-EE9D-4632-94C9-F6C652718006)
+
+###### [DELAY](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sbydb/LOG_ARCHIVE_DEST_n-parameter-attributes.html#GUID-C014D9BB-79D3-4E49-9477-A5CBF0E88167)
+
+###### [LOCATION and SERVICE](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sbydb/LOG_ARCHIVE_DEST_n-parameter-attributes.html#GUID-9ACDEC6C-C2E0-4EDA-B66D-B1F819D3368D)
+
+###### [MANDATORY](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sbydb/LOG_ARCHIVE_DEST_n-parameter-attributes.html#GUID-C4AD4812-D4A6-41C9-8F03-4C87B64F1D4D)
+
+###### [MAX_CONNECTIONS](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sbydb/LOG_ARCHIVE_DEST_n-parameter-attributes.html#GUID-12412B5D-E454-4A2D-942C-7FD8DD71B0DB)
+
+###### [MAX_FAILURE](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sbydb/LOG_ARCHIVE_DEST_n-parameter-attributes.html#GUID-3655C0B5-E669-4475-95B9-01A67AE6A144)
+
+###### [NET_TIMEOUT](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sbydb/LOG_ARCHIVE_DEST_n-parameter-attributes.html#GUID-5067F60F-780E-429E-A0FB-CB121B8DF321)
+
+###### [SYNC and ASYNC](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sbydb/LOG_ARCHIVE_DEST_n-parameter-attributes.html#GUID-E3626025-2E4C-4C61-B5DF-2BB106F0A349)
+
+###### [VALID_FOR](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/sbydb/LOG_ARCHIVE_DEST_n-parameter-attributes.html#GUID-2E1845CC-B3CA-4409-BACB-6AB40D6D42E5)
+
 # [Data Warehousing](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/data-warehousing.html)
 
 ## [VLDB and Partitioning Guide](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/vldbg/index.html)
@@ -2519,4 +3339,12 @@ External reading:
 SELECT * FROM pos_data PARTITION (SYS_P81);
 SELECT * FROM pos_data PARTITION FOR (to_date('15-AUG-2007','dd-mon-yyyy'));
 ```
+
+# [Distributed Data ](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/distributed-data.html)
+
+## Heterogeneous Connectivity
+
+### [Database Gateway for  APPC Installation and Configuration Guide for AIX 5L Based Systems  (64-Bit), HP-UX Itanium, Solaris Operating System (SPARC 64-Bit), Linux  x86, and Linux x86-64](https://docs.oracle.com/en/database/oracle/oracle-database/12.2/appci/index.html)
+
+In [computing](https://en.wikipedia.org/wiki/Computing), **Advanced Program to Program Communication** or **APPC** is a [protocol](https://en.wikipedia.org/wiki/Protocol_(computing)) which [computer programs](https://en.wikipedia.org/wiki/Computer_program) can use to communicate over a [network](https://en.wikipedia.org/wiki/Computer_network). Refer to [wikipedia](https://en.wikipedia.org/wiki/IBM_Advanced_Program-to-Program_Communication).
 
